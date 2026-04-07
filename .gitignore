@@ -1,0 +1,51 @@
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# Tests / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Scan output and local DBs (regenerated each run)
+output/
+
+# Runtime logs
+redscanner.log
+*.log
+
+# Local resume / state (machine-specific)
+resume.cfg
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Captures and large artifacts (if created next to the project)
+*.pcap
+*.pcapng
