@@ -7,6 +7,7 @@ import html
 import json
 import logging
 from datetime import datetime
+from urllib.parse import urlparse, urlunparse
 
 from core.config import ScanConfig
 from core.models import ScanResult, Vulnerability
@@ -31,6 +32,43 @@ class ReportGenerator:
     def __init__(self, config: ScanConfig):
         self.config = config
         self.output_dir = config.output_dir
+
+    def _rewrite_localhost_to_target(self, url: str) -> str:
+        """Crawl fallbacks sometimes emit localhost; map to engagement base URL for real links."""
+        if not url or not url.startswith(("http://", "https://")):
+            return url
+        try:
+            p = urlparse(url)
+            h = (p.hostname or "").lower()
+            if h in ("localhost", "127.0.0.1") or (h and h.startswith("127.")):
+                base = (self.config.base_url or f"http://{self.config.target}").rstrip("/")
+                b = urlparse(base)
+                path = p.path if p.path else "/"
+                return urlunparse((b.scheme, b.netloc, path, p.params, p.query, p.fragment))
+        except Exception:
+            pass
+        return url
+
+    def _html_url_link(self, url: str) -> str:
+        """Single-click <a> for http(s) URLs; escapes safely."""
+        if not url:
+            return ""
+        href = self._rewrite_localhost_to_target(url)
+        if href.startswith(("http://", "https://")):
+            eh = html.escape(href, quote=True)
+            el = html.escape(href)
+            return (
+                f'<a href="{eh}" target="_blank" rel="noopener noreferrer" '
+                f'style="color:#38bdf8;text-decoration:underline;word-break:break-all">{el}</a>'
+            )
+        return html.escape(url)
+
+    def _md_url_line(self, url: str) -> str:
+        """Markdown bullet with clickable link."""
+        h = self._rewrite_localhost_to_target(url)
+        if h.startswith(("http://", "https://")):
+            return f"- [{h}]({h})"
+        return f"- `{url}`"
 
     def generate(self, results: ScanResult):
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -170,30 +208,32 @@ class ReportGenerator:
                 tech = tech[:77] + "..."
             port = str(a.port) if a.port is not None else ""
             title = (a.title or "")[:60].replace("|", "\\|")
+            href = self._rewrite_localhost_to_target(a.url)
+            url_cell = f"[{href}]({href})" if href.startswith(("http://", "https://")) else f"`{a.url}`"
             lines.append(
-                f"| `{a.url}` | {a.ip or ''} | {port} | {a.status_code or ''} | {title} | {tech} |"
+                f"| {url_cell} | {a.ip or ''} | {port} | {a.status_code or ''} | {title} | {tech} |"
             )
         lines.append(_cap_note(len(results.assets_discovered), min(len(results.assets_discovered), LIST_CAP)))
 
         cr = results.urls_crawled[:LIST_CAP]
         if cr:
-            lines += ["", "### Crawled resources (links)", ""]
+            lines += ["", "### Crawled resources (clickable in HTML report)", ""]
             for u in cr:
-                lines.append(f"- `{u}`")
+                lines.append(self._md_url_line(u))
             lines.append(_cap_note(len(results.urls_crawled), len(cr)))
 
         hi = results.urls_historical[:LIST_CAP]
         if hi:
             lines += ["", "### Historical URLs (wayback / gau)", ""]
             for u in hi:
-                lines.append(f"- `{u}`")
+                lines.append(self._md_url_line(u))
             lines.append(_cap_note(len(results.urls_historical), len(hi)))
 
         ss = results.urls_scan_surface[:LIST_CAP]
         if ss:
             lines += ["", "### URLs in scanner scope", ""]
             for u in ss:
-                lines.append(f"- `{u}`")
+                lines.append(self._md_url_line(u))
             lines.append(_cap_note(len(results.urls_scan_surface), len(ss)))
 
         if params:
@@ -225,7 +265,11 @@ class ReportGenerator:
         for i, v in enumerate(vulns, 1):
             lines.append(f"### {i}. [{v.severity.upper()}] {v.vuln_type}")
             lines.append(f"")
-            lines.append(f"- **URL:** {v.url}")
+            vhref = self._rewrite_localhost_to_target(v.url)
+            if vhref.startswith(("http://", "https://")):
+                lines.append(f"- **URL:** [{vhref}]({vhref})")
+            else:
+                lines.append(f"- **URL:** {v.url}")
             if v.parameter:
                 lines.append(f"- **Parameter:** {v.parameter}")
             if v.cve_id:
@@ -256,7 +300,7 @@ class ReportGenerator:
             <tr>
                 <td><span style="background:{color}22;color:{color};padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">{html.escape(str(v.severity))}</span></td>
                 <td>{html.escape(str(v.vuln_type))}</td>
-                <td style="word-break:break-all;max-width:300px;font-size:13px">{html.escape(v.url)}</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">{self._html_url_link(v.url)}</td>
                 <td>{html.escape(str(v.parameter or '-'))}</td>
                 <td>{html.escape(str(v.tool))}</td>
                 <td style="font-size:13px">{html.escape((v.description or '')[:200])}</td>
@@ -324,7 +368,7 @@ class ReportGenerator:
         for a in results.assets_discovered[:LIST_CAP]:
             tech = html.escape(", ".join(a.tech[:8]) if a.tech else "")
             asset_rows += f"""<tr>
-                <td style="word-break:break-all;font-size:12px">{html.escape(a.url)}</td>
+                <td style="word-break:break-all;font-size:12px">{self._html_url_link(a.url)}</td>
                 <td>{html.escape(str(a.ip or ''))}</td>
                 <td>{a.port if a.port is not None else ''}</td>
                 <td>{a.status_code if a.status_code is not None else ''}</td>
@@ -340,7 +384,7 @@ class ReportGenerator:
         def url_list_rows(urls: list[str], cap: int) -> str:
             rows = ""
             for u in urls[:cap]:
-                rows += f"<tr><td style='word-break:break-all;font-size:12px'>{html.escape(u)}</td></tr>"
+                rows += f"<tr><td style='word-break:break-all;font-size:12px'>{self._html_url_link(u)}</td></tr>"
             return rows
 
         crawl_tbl = table_wrap(
@@ -359,7 +403,10 @@ class ReportGenerator:
         params = aggregate_parameters(vulns, results.urls_scan_surface)
         param_rows = ""
         for p in params[:LIST_CAP]:
-            ex = html.escape(", ".join(p["example_urls"][:4]))
+            ex_parts = []
+            for x in p["example_urls"][:4]:
+                ex_parts.append(self._html_url_link(x))
+            ex = ", ".join(ex_parts)
             tools = html.escape(", ".join(p.get("tools") or []))
             param_rows += f"<tr><td><code>{html.escape(p['name'])}</code></td><td>{p['occurrences']}</td><td style='word-break:break-all;font-size:11px'>{ex}</td><td>{tools}</td></tr>"
         params_tbl = table_wrap(
@@ -391,6 +438,8 @@ td {{ padding: 8px 12px; border-bottom: 1px solid #1e293b; font-size: 14px; vert
 tr:hover {{ background: #1e293b44; }}
 .meta {{ color: #94a3b8; font-size: 14px; margin: 4px 0; }}
 .cards {{ display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }}
+a {{ cursor: pointer; }}
+a:hover {{ color: #7dd3fc !important; }}
 </style></head><body>
 <div class="container">
 <h1>RedScanner Report</h1>
