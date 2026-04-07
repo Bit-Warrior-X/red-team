@@ -1,0 +1,98 @@
+http://sec-test.skycloud.tw
+sec-test.skycloud.tw
+
+
+OSINT
+url : https://github.com/iamosinter/OsintLab/tree/main
+
+containing urls 
+: https://osintframework.com/
+:https://web-check.as93.net/check:
+:https://urlscan.io/
+https://osint.tools/
+result : we can get very detailed information about the domain using the apis of these platform. Also we can use referneces of OSINT data for further development.
+
+url :https://dnsdumpster.com/
+result: we can use api of this site to search the records of domains. I found that there are some missing records for current sec-test.skycloud.tw.
+We have to add some more details of information to our domain. I have tested with google.com and post the result.
+
+url : https://github.com/simsong/bulk_extractor.gits
+
+
+url : https://platform.censys.io/
+result : find current domain with given ip address instead of using domain name ( I used 38.60.218.97)
+
+
+highly recommend : https://cylect.io/ for checking all information regarding domains.
+
+
+https://github.com/simsong/bulk_extractor.git : very very high recommend. we can extract these information from traffic between my machine and target domain (sec-test.skycloud.com.tw) emails, URLs, credit card numbers, EXIF metadata, GPS data, JSON, ZIP / GZIP contents,network artifacts (https://forensics.wiki/bulk_extractor/)
+tcpdump -i eth0 host sec-test.skycloud.tw -w traffic.pcap
+bulk_extractor traffic.pcap -o result
+or
+wget -r https://sec-test.skycloud.tw
+bulk_extractor sec-test.skycloud.tw/ -o result
+
+url : https://github.com/sullo/nikto.git
+result : Run from the command line (nikto -h https://target.com), Nikto sends HTTP / HTTPS requests and compares responses against known vulnerability signatures. Users can “tune” scans with category flags (e.g., misconfigurations or SQL injection checks) and employ eight evasion modes to bypass filters.
+
+url : https://github.com/projectdiscovery/nuclei.git
+result : Nuclei’s core engine uses YAML-based templates defining request logic, matchers, and expected responses. Each template describes a specific check — from CVEs and misconfigurations to exposure of sensitive files — allowing rapid updates as new threats emerge. The scanner supports multiple protocols (HTTP, DNS, TCP, SSL, WebSocket, File, Whois) and provides JSON, Markdown, or SARIF outputs for automated reporting. very very nice
+
+
+
+OWASP ZAP tool (very very recommend)
+OWASP ZAP functions as a “man-in-the-middle” proxy, intercepting traffic between a browser and a web application. It can automatically scan for common vulnerabilities such as SQL injection, cross-site scripting (XSS), and insecure cookies. Users can also perform manual testing through built-in tools including fuzzers, spiders, and request editors.
+
+
+Assetfinder https://github.com/tomnomnom/assetfinder.git
+Assetfinder aggregates domain and subdomain data from multiple public sources and APIs. It supports quick enumeration by querying services like Certificate Transparency logs and online databases of known domains. The tool’s focus is speed and simplicity, allowing integration with other reconnaissance utilities such as amass, subfinder, and httprobe
+
+
+sqlmap : https://github.com/sqlmapproject/sqlmap.git
+result : SQLMap automates a broad set of SQL injection techniques, including boolean-based blind, time-based blind, error-based, UNION query-based, stacked queries, and out-of-band exploitation, Once vulnerabilities are detected, it can fingerprint database types and versions, enumerate users and tables, extract or modify stored data, and, when permitted, execute operating system commands on the host. It supports most major database engines such as MySQL, PostgreSQL, Oracle, Microsoft SQL Server, and SQLite.
+
+
+dalfox : https://github.com/hahwul/dalfox.git
+Dalfox supports multiple scanning modes—URL, file, pipeline, server, and payload generation—allowing use in diverse testing scenarios. It identifies reflected, stored, DOM-based, and blind XSS vulnerabilities, and performs parameter mining and static analysis. Features such as bad character filtering, payload abstraction, and parallel encoding optimize performance while reducing noise. The tool also detects issues like open redirects, SSTI, and SQL injection in its extended analysis modes
+
+
+httpx: https://github.com/projectdiscovery/httpx.git
+subfinder -d sec-test.skycloud.tw  -silent | httpx -asn
+
+
+naabu : https://github.com/projectdiscovery/naabu.git
+Naabu supports multiple scan types—SYN, CONNECT, and UDP—to discover responsive ports quickly. It includes DNS and host discovery options, IPv4/IPv6 support, and passive enumeration via the Shodan InternetDB API. The scanner can process input from host lists, CIDR ranges, or ASNs and output results in JSON, text, or standard output formats. Experimental modules provide host discovery and IPv6 probing for expanded coverage.
+
+
+cyberbro : (very nice) https://demo.cyberbro.net/results/6748e710-2cf8-46d1-9c65-c76e8b697c94
+https://github.com/stanfrbd/cyberbro.git
+
+
+recon-ng : https://github.com/lanmaster53/recon-ng.git
+result : worked on it. run the script, but not sure how to use and get result.
+
+waybackurls : https://github.com/tomnomnom/waybackurls.git
+cat domains.txt | waybackurls > urls
+result : not found any urls 
+
+https://subdomainradar.io/ : worked on it and find all subdomains
+https://www.urlvoid.com/scan/sec-test.skycloud.tw/ : find some necessary information regarding geo
+
+gobuster : https://github.com/OJ/gobuster.git
+result : not got expected result, but need to check more
+
+HExHTTP : https://github.com/c0dejump/HExHTTP.git
+result : very good to find and analyze the domain and vulnerabilities.
+
+403JUMP : https://github.com/trap-bytes/403jump.git
+result : I got result, but I am not usre if it is necessary or not.
+
+bruteXSS: https://github.com/rajeshmajumdar/BruteXSS.git
+weaponised-XSS-payloads : https://github.com/hakluke/weaponised-XSS-payloads.git
+
+synapsint : https://synapsint.com/report.php
+very good to find vulnerabilites of domain
+
+https://github.com/jivoi/awesome-osint
+https://github.com/cipher387/osint_stuff_tool_collection/

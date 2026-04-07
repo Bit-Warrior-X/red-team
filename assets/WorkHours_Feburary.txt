@@ -1,0 +1,123 @@
+Day 1:
+OSINT Reconnaissance and Intelligence Framework Analysis
+I conducted an initial reconnaissance phase on the target domain using several OSINT platforms and automated intelligence frameworks. The goal of this task was to determine what publicly available information could be gathered about the target infrastructure and whether such data could later support vulnerability discovery or attack surface expansion. Multiple OSINT platforms were evaluated to determine their ability to collect domain metadata, infrastructure fingerprints, SSL information, DNS configuration, and potential technology stacks.
+
+Results:
+- OsintLab https://github.com/iamosinter/OsintLab
+  provides a large collection of OSINT resources and scripts. Can be used to automate reconnaissance pipelines.
+- OSINT Framework https://osintframework.com
+  provides categorized OSINT intelligence sources useful for domain enumeration, infrastructure intelligence, and breach data collection.
+- Web-Check https://web-check.as93.net/check
+  provides technology fingerprinting and security headers analysis.
+- urlscan.io https://urlscan.io
+  provides detailed website scan results including network requests, domain relations, and HTTP response analysis.
+- OSINT Tools https://osint.tools
+  provides additional intelligence aggregation services.
+
+Analysis : These platforms collectively provide strong reconnaissance capabilities. Their APIs could potentially be integrated into an automated reconnaissance pipeline to continuously monitor infrastructure changes or exposure of the domain.
+
+Day 2:
+DNS Infrastructure Intelligence and Exposure Analysis
+During this stage I analyzed DNS infrastructure and domain record exposure to identify misconfigurations or missing records that may affect security posture or infrastructure visibility.
+
+Results:
+- DNSDumpster https://dnsdumpster.com
+  used to enumerate DNS records, MX records, TXT records, and related subdomains.
+  Several DNS records for sec-test.skycloud.tw appear incomplete compared with large production domains, but google.com contains extensive DNS metadata including SPF, DMARC, multiple MX records, and additional verification entries.
+- Censys https://platform.censys.io
+  used to search infrastructure using IP address rather than domain name. Test performed with IP: 38.60.218.97
+
+Analysis: DNS intelligence tools can expose additional infrastructure information such as mail servers, verification tokens, and subdomain infrastructure. Missing DNS records may reduce visibility but may also indicate incomplete domain configuration.
+
+Day 3:
+Network Traffic Artifact Extraction
+This task focused on analyzing artifacts that can be extracted from network traffic when interacting with the target domain.
+Tool used: bulk_extractor
+
+Results:
+Network capture performed using tcpdump.
+Traffic capture command: tcpdump -i eth0 host sec-test.skycloud.tw -w traffic.pcap
+Artifact extraction: bulk_extractor traffic.pcap -o result
+Alternative extraction from downloaded site:
+wget -r https://sec-test.skycloud.tw
+bulk_extractor sec-test.skycloud.tw/ -o result
+Extracted artifact types include: email addresses,URLs,metadata,EXIF information,JSON structures,ZIP / GZIP compressed data,network artifacts
+
+Analysis: Bulk extractor is very effective for digital forensics and passive intelligence gathering. It can reveal hidden artifacts embedded within captured network traffic or downloaded files. This technique may expose sensitive data if a target application leaks metadata or embedded resources.
+
+
+
+Day 4:
+Web Vulnerability Scanner Evaluation
+I evaluated automated web vulnerability scanners to detect common security issues.
+
+Results:
+- Nikto https://github.com/sullo/nikto.git
+  command line vulnerability scanner that checks: outdated software, misconfigured servers, insecure files, common vulnerability signatures
+- OWASP ZAP https://www.zaproxy.org
+  dynamic web application scanner acting as a man-in-the-middle proxy.
+Features tested: automated vulnerability scanning, spider crawling, fuzzing requests, injection testing, cookie security analysis
+
+Analysis: Nikto is effective for quick baseline vulnerability checks, while OWASP ZAP provides deeper dynamic analysis. ZAP is particularly useful for manual testing scenarios where custom attack payloads or fuzzing techniques are required.
+
+
+Day 5:
+Automated Vulnerability Detection Framework Testing
+I evaluated advanced automated vulnerability scanning frameworks designed for modern penetration testing.
+
+Results:
+
+- Nuclei https://github.com/projectdiscovery/nuclei.git
+  template-based vulnerability scanner. 
+  Supports detection of: CVE vulnerabilities, exposed files, misconfigured services, sensitive endpoints
+- SQLMap https://github.com/sqlmapproject/sqlmap.git
+  automated SQL injection exploitation tool capable of: detecting injection vulnerabilities, enumerating databases, extracting data, executing OS commands on vulnerable hosts
+- Dalfox https://github.com/hahwul/dalfox.git
+  automated XSS scanner: detects reflected XSS, stored XSS, DOM-based XSS, blind XSS
+
+Analysis: These tools significantly accelerate vulnerability discovery. Nuclei is especially powerful due to its large template ecosystem and support for multiple protocols.
+
+Day 6:
+Subdomain Enumeration and Infrastructure Discovery
+Objective of this phase was to map the attack surface of the domain by discovering additional subdomains and exposed services.
+
+Tools used: Assetfinder, Subfinder, httpx, Naabu
+Results: 
+ Subfinder pipeline: subfinder -d sec-test.skycloud.tw -silent | httpx -asn
+ Naabu port scan capabilities tested: SYN scan, TCP connect scan, UDP scanning, ASN discovery
+
+Analysis: Subdomain enumeration significantly expands the attack surface. Hidden services often reside on less protected subdomains and may expose administrative panels or development environments.
+
+Day 7:
+Additional OSINT Intelligence Platforms
+I evaluated several intelligence aggregation platforms designed to analyze domain exposure and reputation.
+
+Results:
+- Synapsint https://synapsint.com/report.php
+  provides vulnerability and infrastructure intelligence.
+- SubdomainRadar https://subdomainradar.io
+  used to enumerate subdomains.
+- URLVoid https://www.urlvoid.com
+  provides IP reputation and geolocation information.
+
+Analysis: These services provide high-level intelligence that can complement automated reconnaissance tools. They are particularly useful for identifying domain reputation and external exposure.
+
+
+Day 8:
+Web Reconnaissance and Attack Surface Enumeration Tools
+This phase involved testing multiple reconnaissance tools to evaluate their effectiveness for automated security assessments.
+
+Results:
+
+- Recon-ng https://github.com/lanmaster53/recon-ng.git
+  powerful reconnaissance framework but requires additional module configuration.
+- Gobuster https://github.com/OJ/gobuster.git
+  directory brute-forcing tool. No significant directories discovered during initial testing.
+- HExHTTP https://github.com/c0dejump/HExHTTP.git
+  useful for HTTP security analysis and vulnerability discovery.
+- 403jump https://github.com/trap-bytes/403jump.git
+  attempts to bypass HTTP 403 restrictions.
+- Cyberbro https://github.com/stanfrbd/cyberbro.git
+  automated reconnaissance platform providing aggregated intelligence results.
+
+Analysis: Reconnaissance automation tools can significantly reduce manual testing time. However, most require tuning and proper wordlists to produce meaningful results.

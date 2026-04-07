@@ -1,0 +1,110 @@
+{
+  "scan_id": "20260407_132930",
+  "target": "sec-test.skycloud.tw",
+  "started_at": "2026-04-07T13:29:30.172282",
+  "finished_at": "2026-04-07T13:33:11.232659",
+  "modules_run": [
+    "recon",
+    "nuclei",
+    "xss",
+    "sqli",
+    "api_leak"
+  ],
+  "summary": {
+    "critical": 7
+  },
+  "assets_discovered": 1,
+  "vulnerabilities": [
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "type",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [13:32:08] [WARNING] heuristic (basic) test shows that POST parameter 'type' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "name",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [13:32:08] [WARNING] heuristic (basic) test shows that POST parameter 'name' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "email",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [13:32:09] [WARNING] heuristic (basic) test shows that POST parameter 'email' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "title",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [13:32:09] [WARNING] heuristic (basic) test shows that POST parameter 'title' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "message",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [13:32:09] [WARNING] heuristic (basic) test shows that POST parameter 'message' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "unknown",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [13:32:09] [ERROR] all tested parameters do not appear to be injectable. Try to increase values for '--level'/'--risk' options if you wish to perform more tests. Please retry with the switch '--text-only' (along with --technique=BU) as this case looks like a perfect candidate (low textual content along with inability of comparison engine to detect at least one dynamic parameter). If you suspect that there is some kind of protection mechanism involved (e.g. WAF) maybe you could try to use option '--tamper' (e.g. '--tamper=space2comment') and/or switch '--random-agent', skipping to the next target",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "page",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [13:32:51] [WARNING] heuristic (basic) test shows that GET parameter 'page' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    }
+  ]
+}

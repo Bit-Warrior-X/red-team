@@ -1,0 +1,3 @@
+sec-test.skycloud.tw:80
+sec-test.skycloud.tw:22
+sec-test.skycloud.tw:443

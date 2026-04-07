@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>RedScanner Report - sec-test.skycloud.tw</title>
+<style>
+body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 24px; }
+.container { max-width: 1100px; margin: 0 auto; }
+h1 { color: #f1f5f9; font-size: 24px; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+th { text-align: left; padding: 10px 12px; background: #1e293b; color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+td { padding: 10px 12px; border-bottom: 1px solid #1e293b; font-size: 14px; }
+tr:hover { background: #1e293b44; }
+.meta { color: #94a3b8; font-size: 14px; margin: 4px 0; }
+.cards { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+</style></head><body>
+<div class="container">
+<h1>RedScanner Report</h1>
+<p class="meta"><strong>Target:</strong> sec-test.skycloud.tw &nbsp; <strong>Scan ID:</strong> 20260407_132930 &nbsp; <strong>Date:</strong> 2026-04-07 13:29 &nbsp; <strong>Duration:</strong> 221.1s</p>
+<p class="meta"><strong>Modules:</strong> recon, nuclei, xss, sqli, api_leak &nbsp; <strong>Assets:</strong> 1 &nbsp; <strong>Total Findings:</strong> 7</p>
+<div class="cards"><div style="text-align:center;padding:16px 24px;background:#dc262611;border:1px solid #dc262633;border-radius:8px"><div style="font-size:28px;font-weight:800;color:#dc2626">7</div><div style="font-size:12px;color:#dc2626;text-transform:uppercase;font-weight:600">critical</div></div><div style="text-align:center;padding:16px 24px;background:#ea580c11;border:1px solid #ea580c33;border-radius:8px"><div style="font-size:28px;font-weight:800;color:#ea580c">0</div><div style="font-size:12px;color:#ea580c;text-transform:uppercase;font-weight:600">high</div></div><div style="text-align:center;padding:16px 24px;background:#d9770611;border:1px solid #d9770633;border-radius:8px"><div style="font-size:28px;font-weight:800;color:#d97706">0</div><div style="font-size:12px;color:#d97706;text-transform:uppercase;font-weight:600">medium</div></div><div style="text-align:center;padding:16px 24px;background:#2563eb11;border:1px solid #2563eb33;border-radius:8px"><div style="font-size:28px;font-weight:800;color:#2563eb">0</div><div style="font-size:12px;color:#2563eb;text-transform:uppercase;font-weight:600">low</div></div><div style="text-align:center;padding:16px 24px;background:#6b728011;border:1px solid #6b728033;border-radius:8px"><div style="font-size:28px;font-weight:800;color:#6b7280">0</div><div style="font-size:12px;color:#6b7280;text-transform:uppercase;font-weight:600">info</div></div></div>
+<table>
+<tr><th>Severity</th><th>Type</th><th>URL</th><th>Param</th><th>Tool</th><th>Description</th></tr>
+
+            <tr>
+                <td><span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">CRITICAL</span></td>
+                <td>sqli</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">http://sec-test.skycloud.tw</td>
+                <td>type</td>
+                <td>sqlmap</td>
+                <td style="font-size:13px">SQL injection found: [13:32:08] [WARNING] heuristic (basic) test shows that POST parameter 'type' might not be injectabl</td>
+            </tr>
+            <tr>
+                <td><span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">CRITICAL</span></td>
+                <td>sqli</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">http://sec-test.skycloud.tw</td>
+                <td>name</td>
+                <td>sqlmap</td>
+                <td style="font-size:13px">SQL injection found: [13:32:08] [WARNING] heuristic (basic) test shows that POST parameter 'name' might not be injectabl</td>
+            </tr>
+            <tr>
+                <td><span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">CRITICAL</span></td>
+                <td>sqli</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">http://sec-test.skycloud.tw</td>
+                <td>email</td>
+                <td>sqlmap</td>
+                <td style="font-size:13px">SQL injection found: [13:32:09] [WARNING] heuristic (basic) test shows that POST parameter 'email' might not be injectab</td>
+            </tr>
+            <tr>
+                <td><span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">CRITICAL</span></td>
+                <td>sqli</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">http://sec-test.skycloud.tw</td>
+                <td>title</td>
+                <td>sqlmap</td>
+                <td style="font-size:13px">SQL injection found: [13:32:09] [WARNING] heuristic (basic) test shows that POST parameter 'title' might not be injectab</td>
+            </tr>
+            <tr>
+                <td><span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">CRITICAL</span></td>
+                <td>sqli</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">http://sec-test.skycloud.tw</td>
+                <td>message</td>
+                <td>sqlmap</td>
+                <td style="font-size:13px">SQL injection found: [13:32:09] [WARNING] heuristic (basic) test shows that POST parameter 'message' might not be inject</td>
+            </tr>
+            <tr>
+                <td><span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">CRITICAL</span></td>
+                <td>sqli</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">http://sec-test.skycloud.tw</td>
+                <td>unknown</td>
+                <td>sqlmap</td>
+                <td style="font-size:13px">SQL injection found: [13:32:09] [ERROR] all tested parameters do not appear to be injectable. Try to increase values for</td>
+            </tr>
+            <tr>
+                <td><span style="background:#dc262622;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px">CRITICAL</span></td>
+                <td>sqli</td>
+                <td style="word-break:break-all;max-width:300px;font-size:13px">http://sec-test.skycloud.tw</td>
+                <td>page</td>
+                <td>sqlmap</td>
+                <td style="font-size:13px">SQL injection found: [13:32:51] [WARNING] heuristic (basic) test shows that GET parameter 'page' might not be injectable</td>
+            </tr>
+</table>
+</div></body></html>

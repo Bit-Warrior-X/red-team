@@ -1,0 +1,250 @@
+
+
+
+Red Team Plan
+
+
+1.Executive Overview
+This Red Team engagement is designed to rigorously evaluate the security posture of the client’s web services, infrastructure, and operational defenses through realistic adversarial simulation. The primary objective is not only to identify existing vulnerabilities but also to strengthen long-term resilience by enabling continuous, automated, and intelligence-driven improvement in the organization’s defensive capabilities.
+
+A core intention behind this assessment is to proactively discover weaknesses within the website and supporting systems, responsibly report them to the Blue Team, and ensure they are remediated effectively. Unlike a traditional one-time penetration test, this program is designed as a cyclical, intelligence-driven security improvement loop, helping the organization evolve its defensive maturity over time.
+
+To push beyond standard assessments, this plan incorporates a strategic vision for automation, AI augmentation, and adaptive threat learning:
+
+Automated Vulnerability Discovery Pipeline:
+The long-term goal is to convert manual red team methodologies into a scalable and continuous monitoring system. Techniques used during this engagement—such as reconnaissance, exploit attempts, behavioral analysis, and anomaly detection—can be distilled into automated workflows capable of running 24/7.
+
+AI-assisted Attack Modeling & Detection:
+Leveraging machine learning models and reinforcement-learning-based agents, the system will continuously learn from Red Team findings, real-world threat intelligence, and emerging attack patterns. This helps build a defensive engine that automatically recognizes new attack vectors, reducing dependence on human-only detection.
+
+Self-Updating Threat Intelligence:
+The proposed approach supports integrating AI systems that continually ingest global threat data, new CVEs, exploit proofs-of-concept, and adversarial TTP updates. This allows the system to train against new threats and automatically adapt defense mechanisms, extending the value of the red team engagement into a long-term strategic asset.
+
+Automated Response Framework:
+Over time, the organization will be able to deploy AI-driven response policies that detect adversarial behaviors, isolate suspicious activities, and guide the Blue Team with prioritized, contextualized recommendations before incidents escalate.
+
+Through this engagement, the Red Team will simulate realistic threat actors, attempt controlled exploitation of identified vulnerabilities, and provide structured reporting to the Blue Team. These findings will serve as the foundation for building a more autonomous and intelligent defense ecosystem. Ultimately, the objective is to evolve the organization’s security posture from reactive to predictive, enabling faster mitigation, reduced attack surfaces, and continuous hardening of the web services.
+
+The Red Team's current goal is to detect security vulnerabilities in a given test website. If successful, the ultimate goal will be to implement AI and automate the process.
+The Red Team will follow full-scope adversary simulation, applying methodologies from:
+
+MITRE ATT&CK Framework (Enterprise + Cloud + Recon)
+PTES (Penetration Testing Execution Standard)
+OWASP Web Security Testing Guide (WSTG)
+NIST SP 800-115 Technical Guide for Security Testing
+
+2.Objectives
+Primary Objectives
+Identify vulnerabilities across the web application, CDN node, and backend services.
+Evaluate the effectiveness of detection, protections, and response mechanisms.
+Simulate realistic threat actors including:
+Botnet-scale DDoS adversaries
+Targeted web exploitation groups
+State-level recon actors
+CDN/WAF bypass specialists
+Provide high-fidelity attack evidence, IOCs, and full remediation guidance.
+
+Secondary Objectives
+Assess resilience against HTTP/2 & HTTP/3 abuse vectors.
+Test for CDN cache poisoning, origin exposure, header-based bypass
+Evaluate protocol-level weaknesses (TCP tuning, gQUIC, HTTP/3).
+
+
+3.Environment 
+A dedicated Attack Platform VM (38.60.221.252)
+A CDN Node replicating the client’s edge delivery system (38.60.218.97)
+An Origin Web Server hosting the duplicated application (38.60.218.193)
+A CDN Control Panel for configuration validation (http://panel.cdnray.com)
+The Test Target URL routed through the CDN to the origin (http://sec-test.skycloud.tw)
+
+4.Methodology
+Reconnaissance (OSINT + Active Intel Gathering)
+1.Target Mapping
+
+Subdomain enumeration
+DNS zone transfer testing
+CDN fingerprinting (Akamai, Cloudflare, custom CDN pipes)
+Origin leak enumeration (real IP discovery)
+Certificate transparency analysis for hidden environments
+
+2.Frameworks & Tools
+
+OSINT Framework
+SpiderFoot
+crt.sh, Censys, Shodan
+MassDNS, dnsx, subfinder
+Passive SSL/TLS metadata analysis
+
+Vulnerability Discovery (Web, Infra, CDN, Protocol)
+1.Web Application Testing
+
+Following OWASP WSTG:
+Injection testing (SQLi, XSS, SSTI, RCE)
+File inclusion (LFI/RFI)
+Authentication security
+Session fixation
+Cookie misconfiguration (SameSite, Secure, HttpOnly)
+CSRF token validation
+Sensitive data exposure
+
+2.CDN & Caching Security
+
+Cache poisoning
+Cache deception
+CDN bypass attempts
+Origin exposure checks
+HTTP smuggling (CL.TE / TE.CL)
+HTTP/2 request multiplexing exploitation
+HTTP/3 malformed frame testing
+
+3.Server/Infra Testing
+
+Nginx misconfiguration
+Header injection (X-Forwarded-For replay)
+Rate-limit bypass testing
+CRS/WAF rule evaluation
+TLS downgrade testing
+Open ports & service fingerprinting
+TCP-level RST/ACK abuse
+
+4.Tools & Frameworks
+
+Burp Suite Pro
+Nmap + NSE
+Nikto
+Jaeles
+HTTP/2 Rapid Reset testers
+H2C Smuggler
+Testssl
+Custom scripts for protocol fuzzing (H3, QUIC)
+
+Exploitation (Controlled, Non-Destructive)
+1.Web Exploitation
+
+XSS → session hijacking simulation
+LFI/RFI → file reads/log poisoning
+SSTI → template injection to RCE simulation
+SQL injection exploitation
+Authentication bypass (JWT forging, weak session tokens)
+Privilege escalation chain testing
+
+2.CDN & Edge Attacks
+
+Cache poisoning execution
+Origin leak exploitation
+HTTP smuggling exploitation
+WAF bypass payloads
+CDN geo-distribution load weakness mapping
+
+3.Infrastructure Exploitation
+
+Misconfigured Nginx directives
+Misused proxy_pass parameters
+Unrestricted internal endpoint access
+CORS exploitation
+Header hopping to origin
+
+4.Tools
+
+metasploit-framework
+sqlmap (manual-only mode)
+custom PoC scripts
+mitmproxy fuzzers
+testssl.sh
+
+Post-Exploitation Simulation
+1.Persistence Simulation
+
+Cookie persistence
+Session replay
+API token abuse
+Privilege ascent paths
+
+2.Pivoting Simulation
+
+Mapping reachable internal services
+Identifying escalation potential
+Assessing inter-service trust
+
+3.Data Access Simulation
+
+Sensitive endpoints
+Debug/info-leak endpoints
+Directory enumeration
+Misconfigured admin panels
+
+
+DDoS & Traffic Stress Testing (Controlled Simulation)
+1.Attack Types Simulated (Low/Medium Load Only)
+
+Layer 7 (HTTP Flood / Cache bypass flood)
+Layer 4 load testing (SYN flood simulation)
+HTTP/2 Rapid Reset simulation
+Slowloris / HTTP fragmentation
+CDN-bypass floods
+QUIC/HTTP3 malformed packet floods
+
+2.Vectors & Tools Referenced
+
+From your list:
+MHDDoS
+MikuMikuBeam
+TCPDominate
+SOCKETEXPLODE
+Impulse
+Custom Python/Go flooders
+HTTP/2 Rapid Reset tools
+
+Detection, Logging & Monitoring Evaluation
+1.Visibility Testing
+
+Whether anomalous traffic is logged
+Whether WAF/CDN alerts trigger
+Whether origin sees unexpected requests
+SIEM correlation test
+
+2.SOC Response Testing
+
+Reaction time measurement
+Alert correctness
+Escalation path validation
+
+3.Log Quality Review
+
+Nginx log completeness (request_time, upstream info)
+CDN edge logs
+Error logs
+
+Reporting & Deliverables
+1.Technical Report
+
+Each vulnerability with:
+Severity (CVSS v3.1 + business impact)
+Exploit chain step-by-step
+Proof of Concept
+Affected components
+Impact analysis
+
+2.Management Report
+
+Executive summary
+Risk heatmap
+Recommended strategic actions
+
+3.Evidence Package
+
+Packet captures (if allowed)
+Request/response logs
+Attack timelines
+Screenshots
+
+5. Expected Outcomes
+A complete adversarial narrative
+Full vulnerability matrix
+Architecture and configuration issues
+CDN hardening recommendations
+Network-level tuning (Nginx, TCP, XDP, eBPF)
+Logging and SIEM improvements
+DDoS mitigation updates
+Attack chain diagrams
+Blue team actionable remediation plan

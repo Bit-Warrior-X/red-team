@@ -1,0 +1,18 @@
+# Engagement defaults for the scanner: assets/red_plan.json
+
+# The VM of the website origin
+login: ssh root@38.60.218.193
+password: Pupil-Cortex2-Crestless
+
+# The VM of CDN node
+login: ssh root@38.60.218.97
+password: Pupil-Cortex2-Crestless
+
+# The panel of our CDN platform
+http://panel.cdnray.com
+username: sec01@prod.com
+password: Pupil-Cortex2-Crestless
+
+# URL of the test env that you need to attack.
+http://sec-test.skycloud.tw
+This url is proxied by the CDN node (38.60.218.97) to the origin server (38.60.218.193)

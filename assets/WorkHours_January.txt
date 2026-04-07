@@ -1,0 +1,100 @@
+Day 1 :
+Confirmed scope and target domain for January work. Organized tool categories and testing order. Confirmed scope and target domain for January work. Organized tool categories and testing order. Researched online red‑team service providers to see how they normally works.
+
+Researched red-team :
+study https://www.mend.io/wp-content/uploads/2025/09/Red-Teaming-Practical-Guide.pdf
+https://portswigger.net/,
+https://horizon3.ai/
+https://cloud.google.com/security/mandiant
+https://www.crowdstrike.com/en-us/
+https://bishopfox.com/
+
+Result:
+Common deliverables: executive summary, attack narrative, MITRE mapping, impact analysis, remediation plan.
+Typical phases: recon → initial access → lateral movement → privilege escalation → exfiltration simulation.
+
+Day 2:
+Fast Subdomain Brute + Passive Enum
+After an initial round of aggressive and passive subdomain enumeration, I conducted a tool efficacy analysis, finding that subDomainsBrute failed to return results, ESD and domained performed below expectations, while subfinder—though currently yielding limited results as a bot-based tool—requires further technical analysis to assess its underlying potential.
+
+Result:
+subDomainsBrute(https://github.com/lijiejie/subDomainsBrute) → failed to get sub domain urls
+ESD(https://github.com/FeeiCN/ESD) → not good
+subfinder(https://github.com/projectdiscovery/subfinder.git) → not good, but it's the latest code and it's a kind of bot, so we need to analyze it more
+domained(https://github.com/TypeError/domained) → not good
+
+
+
+Day 3:
+Subdomain Mutation + Fix Attempts + Takeover
+I employed permutation techniques with altdns to uncover 24 new subdomains, while also diagnosing and attempting fixes on several specialized tools—ultimately finding dnsmaper partially functional after code corrections, but determining that wydomain and SubOver were non-viable in their current states.
+
+altdns(https://github.com/infosec-au/altdns) ->  found subdomains:
+Result : sec-test-admin.skycloud.tw, qa.sec-test.skycloud.tw, staging.sec-test.skycloud.tw, devsec-test.skycloud.tw, sec-testdev.skycloud.tw, sec-teststaging.skycloud.tw
+sec-test-dev.skycloud.tw, sec-test.dev.skycloud.tw, sec-testadmin.skycloud.tw, qa-sec-test.skycloud.tw, dev.sec-test.skycloud.tw, stagingsec-test.skycloud.tw, qasec-test.skycloud.tw
+sec-testqa.skycloud.tw, sec-test.qa.skycloud.tw, adminsec-test.skycloud.tw,  sec-test-qa.skycloud.tw, sec-test-staging.skycloud.tw, sec-test.admin.skycloud.tw
+admin-sec-test.skycloud.tw, staging-sec-test.skycloud.tw, admin.sec-test.skycloud.tw, sec-test.staging.skycloud.tw, dev-sec-test.skycloud.tw
+
+wydomain(https://github.com/ring04h/wydomain) -> code issue, tried to fix, but failed
+dnsmaper(https://github.com/le4f/dnsmaper) -> fix code issue and run, but didn't get full result
+SubOver(https://github.com/Ice3man543/SubOver) -> not working, very bad
+
+
+Day 4:
+URL Crawling + JS Recon
+I conducted URL crawl and JavaScript reconnaissance operation, utilizing xcrawl3r to map the target's endpoints and successfully employing mantra—fed by waybackurls and gau pipelines—to analyze extracted JS files, confirming its effectiveness in identifying sensitive assets such as API keys.
+
+Results:
+xcrawl3r (https://github.com/hueristiq/xcrawl3r) → Fetches all urls regarding test domain.
+mantra(https://github.com/brosck/mantra) → useful, we can use this tool to get api key and also we can use with other tools to get more detailed information for tes tsite.
+waybackurls sec-test.skycloud.tw | grep "\.js$" | sort -u > js_urls.txt
+cat js_urls.txt | ./mantra-amd64-linux
+gau sec-test.skycloud.tw | grep -E "\.js($|\?)" | sort -u | ./mantra-amd64-linux
+
+Day 5:
+XSS Testing
+I conducted evaluation of automated XSS scanners, determining through systematic testing that dalfox demonstrated high effectiveness and reliability for automated testing, while PwnXSS proved inconsistent and less suitable for broad deployment across all sites.
+
+results:
+PwnXSS(https://github.com/pwn0sec/PwnXSS) → not good for all sites
+dalfox(https://github.com/hahwul/dalfox) → very useful, good for automated XSS testing
+
+Day 6:
+SQLi + Auth Weakness / Brute Force
+SQL injection and authentication weaknesses, I evaluated multiple automation tools, finding that SQLiScanner failed to execute, DSSS and injectbot returned no exploitable results, and legacy Python projects (web_pwd_common_crack, myBFF) were incompatible, while Kraken emerged as the most effective tool due to its comprehensive suite of brute-force methods.
+
+results:
+SQLiScanner(https://github.com/0xbug/SQLiScanner) → failed to run program
+DSSS(https://github.com/stamparm/DSSS) → no vulnerabilities found
+injectbot(https://github.com/tariqhawis/injectbot) → nno result, but need to analyze it more, based on php but it's automation bot so we can use it future.
+web_pwd_common_crack(https://github.com/TideSec/web_pwd_common_crack.git) → too old version python, failed to fix code, but need to anlyze to help for weakness brute force admin login
+myBFF(https://github.com/rapid7/myBFF.git) → old Python project, no result
+Kraken(https://github.com/jasonxtn/Kraken.git) → good. This tool consist all brute force attack methods. we can use this tool to brute force a target website to find vulnerabilites.
+
+
+Day 7:
+Asset Discovery + Ports + Intelligent Tools
+I comprehensive asset discovery and infrastructure fingerprinting, identifying dismap and skanuvaty as highly effective for port scanning and rapid enumeration, while also evaluating specialized tools—finding shortscan useful for specific IIS issues, regulator unnecessary, and determining that subwiz shows potential for future AI-assisted work and Dome requires API key integration for full functionality.
+
+dismap(https://github.com/zhzyker/dismap.git) → very useful, good for open ports/assets
+shortscan(https://github.com/bitquark/shortscan) → not good, but still useful for IIS file issues
+skanuvaty(https://github.com/Esc4iCEscEsc/skanuvaty.git) → good, we can get address of domains fast. this utility seems good for use for our red team plan.
+Dome(https://github.com/v4d1/Dome.git) → no result right now, but need to research more. this tool is more intelligent and require some api keys. I think we should research more about this sites.
+Virus Total - https://www.virustotal.com/gui/user/<YOUR_USERNAME>/apikey
+Shodan - https://account.shodan.io/
+CertSpotter - https://sslmate.com/account/api_credentials
+FullHunt - https://fullhunt.io/user/settings/
+SECURITYTRAILS - https://securitytrails.com/app/account/credentials
+PASSIVETOTAL - https://community.riskiq.com/settings
+BINARYEDGE - https://app.binaryedge.io/account/api
+
+regulator(https://github.com/cramppet/regulator) → not good, no need now
+subwiz(https://github.com/hadriansecurity/subwiz) → a little good, seems need for fututure AI work. it uses nanoGPT model.
+
+
+Day 8:
+OWASP / Burp Suite / Final Wrap
+I conducted OWASP-aligned validation and workflow assessment, confirming through testing that amass performs as expected, utilizing Scanners-Box as an effective reference guide, and determining that the Burp Suite + domain_hunter_pro integration provides a robust and powerful foundation for professional penetration testing workflows.
+
+amass(https://github.com/owasp-amass) → tested, need more research
+Burp Suite App + domain_hunter_pro (https://github.com/bit4woo/domain_hunter_pro.git) → very nice, we can use burp suite tool to pentest for target website and also use this plugin and repo for further work.

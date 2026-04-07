@@ -1,0 +1,183 @@
+{
+  "scan_id": "20260407_142901",
+  "target": "sec-test.skycloud.tw",
+  "plan_title": "Red team engagement plan",
+  "plan_description": "Web assessment automation: ProjectDiscovery stack (subfinder, httpx, naabu), nuclei, dalfox, sqlmap, xcrawl3r, waybackurls/gau, nikto, and JS secret patterns (api_leak). Manual phases list follow-up work outside this pipeline.",
+  "started_at": "2026-04-07T14:29:01.992295",
+  "finished_at": "2026-04-07T14:32:47.584409",
+  "modules_run": [
+    "recon",
+    "wayback",
+    "naabu",
+    "nuclei",
+    "xss",
+    "sqli",
+    "api_leak",
+    "nikto"
+  ],
+  "summary": {
+    "critical": 7
+  },
+  "assets_discovered": 1,
+  "methodology_frameworks": [
+    "MITRE ATT&CK (Enterprise + Cloud + Recon)",
+    "PTES \u2014 Penetration Testing Execution Standard",
+    "OWASP Web Security Testing Guide (WSTG)",
+    "NIST SP 800-115 \u2014 Technical Guide for Security Testing"
+  ],
+  "manual_phases": [
+    {
+      "name": "OSINT and passive mapping",
+      "tasks": [
+        "OsintLab / OSINT Framework / web-check / urlscan.io / osint.tools \u2014 map metadata and relations",
+        "DNSDumpster + Censys on CDN edge IP; compare DNS completeness vs production baselines",
+        "Synapsint, SubdomainRadar, URLVoid for reputation and exposure",
+        "SpiderFoot, crt.sh \u2014 certificate transparency and passive intel"
+      ]
+    },
+    {
+      "name": "Active recon and DNS",
+      "tasks": [
+        "MassDNS, dnsx \u2014 validate hosts; zone transfer checks where in scope",
+        "subfinder + httpx + naabu \u2014 confirm live hosts and ports",
+        "Origin leak / real-IP discovery \u2014 correlate with attack platform and CDN roles"
+      ]
+    },
+    {
+      "name": "Web and CDN testing (manual)",
+      "tasks": [
+        "Burp Suite Pro + domain_hunter_pro; OWASP ZAP for proxy, spider, fuzzing",
+        "CDN/cache: poisoning, deception, bypass, HTTP smuggling (CL.TE / TE.CL), H2 issues \u2014 lab only",
+        "Jaeles, Nmap + NSE, testssl.sh \u2014 supplementary to automated nuclei/naabu/nikto",
+        "HExHTTP, 403jump, gobuster \u2014 tune wordlists for the target"
+      ]
+    },
+    {
+      "name": "Traffic and artifacts",
+      "tasks": [
+        "tcpdump / mirror site \u2192 bulk_extractor on PCAP or downloaded tree",
+        "Mantra on JS URL lists: waybackurls|gau \u2192 .js \u2192 patterns (partially covered by api_leak module)"
+      ]
+    },
+    {
+      "name": "Reporting and blue-team handoff",
+      "tasks": [
+        "CVSS v3.1 + business impact, PoC, remediation",
+        "Mend Red-Teaming-Practical-Guide PDF for narrative structure"
+      ]
+    }
+  ],
+  "research_references": [
+    "https://www.mend.io/wp-content/uploads/2025/09/Red-Teaming-Practical-Guide.pdf",
+    "https://github.com/projectdiscovery/subfinder",
+    "https://github.com/projectdiscovery/httpx",
+    "https://github.com/projectdiscovery/naabu",
+    "https://github.com/projectdiscovery/nuclei",
+    "https://github.com/hahwul/dalfox",
+    "https://github.com/sqlmapproject/sqlmap",
+    "https://github.com/hueristiq/xcrawl3r",
+    "https://github.com/tomnomnom/waybackurls",
+    "https://github.com/lc/gau",
+    "https://github.com/tomnomnom/assetfinder",
+    "https://github.com/sullo/nikto",
+    "https://github.com/brosck/mantra",
+    "https://github.com/bit4woo/domain_hunter_pro",
+    "https://github.com/jaeles-project/jaeles",
+    "https://github.com/owasp-amass/amass",
+    "https://github.com/bst04/CyberSources",
+    "https://github.com/wddadk/Offensive-OSINT-Tools"
+  ],
+  "vulnerabilities": [
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "type",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [14:32:36] [WARNING] heuristic (basic) test shows that POST parameter 'type' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "name",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [14:32:36] [WARNING] heuristic (basic) test shows that POST parameter 'name' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "email",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [14:32:37] [WARNING] heuristic (basic) test shows that POST parameter 'email' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "title",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [14:32:37] [WARNING] heuristic (basic) test shows that POST parameter 'title' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "message",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [14:32:37] [WARNING] heuristic (basic) test shows that POST parameter 'message' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "unknown",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [14:32:37] [ERROR] all tested parameters do not appear to be injectable. Try to increase values for '--level'/'--risk' options if you wish to perform more tests. Please retry with the switch '--text-only' (along with --technique=BU) as this case looks like a perfect candidate (low textual content along with inability of comparison engine to detect at least one dynamic parameter). If you suspect that there is some kind of protection mechanism involved (e.g. WAF) maybe you could try to use option '--tamper' (e.g. '--tamper=space2comment') and/or switch '--random-agent', skipping to the next target",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    },
+    {
+      "type": "sqli",
+      "severity": "critical",
+      "url": "http://sec-test.skycloud.tw",
+      "parameter": "page",
+      "payload": null,
+      "evidence": null,
+      "description": "SQL injection found: [14:32:46] [WARNING] heuristic (basic) test shows that GET parameter 'page' might not be injectable",
+      "remediation": "Use parameterized queries / prepared statements",
+      "cvss_score": null,
+      "cve_id": null,
+      "tool": "sqlmap"
+    }
+  ]
+}
