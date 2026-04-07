@@ -1,1 +1,0 @@
-http://sec-test.skycloud.tw/news?page=2 (GET)  # /home/red/venv/bin/sqlmap -u http://sec-test.skycloud.tw --batch --smart --level 2 --risk 1 --output-dir output/sec-test.skycloud.tw/20260407_140414/sqlmap --forms --crawl=2
