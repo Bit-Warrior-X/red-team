@@ -1,0 +1,81 @@
+Day 1:
+Beta RedScanner architecture and engagement plan file
+Defined a single Python orchestrator (main.py) to run reconnaissance and vulnerability modules in a fixed order, with defaults loaded from assets/red_plan.json (domain, base_url, profiles, manual methodology text, reference links).
+
+Results:
+- Modules: recon, wayback, naabu, nuclei, xss, sqli, api_leak, nikto — selectable via profiles (full, lite, red-team, attack-surface, recon-only, quick, vuln-only, osint-prep) or comma-separated --modules.
+- ScanConfig + SQLite results.db for assets and findings; ReportGenerator for HTML/MD/JSON.
+
+Analysis: Centralizing the plan in JSON keeps the scanner and written methodology aligned; external tools remain optional on PATH.
+
+
+Day 2:
+Surface reporting and report richness
+Implemented aggregation of domains, crawled URLs, wayback/gau URLs, full scan-surface URL list, naabu open ports, httpx asset details (ip, port, status, title, tech), and query-parameter summaries from findings and URLs.
+
+Results:
+- report.json includes a "surface" object; surface.json duplicates the surface payload for quick tooling.
+- Markdown and HTML reports list tables for attack-surface data; HTML caps very long lists for readability while JSON stays complete.
+
+Analysis: Operators can review attack surface without opening only the vulnerability table.
+
+
+Day 3:
+HTML usability and localhost handling
+Added clickable links in HTML (and markdown links) for crawled URLs, historical URLs, scope URLs, httpx URLs, vulnerability URLs, and parameter example URLs. When the crawler emitted http://localhost/... paths, links are rewritten to the engagement base_url from red_plan.json so one-click navigation hits the real test host.
+
+Results:
+- report.html uses target="_blank" rel="noopener noreferrer" for external links; minor CSS for link hover.
+
+Analysis: Reduces friction when validating findings in the browser.
+
+
+Day 4:
+xcrawl3r CLI fix and documentation
+Discovered that xcrawl3r uses -d for --domain (scope), not crawl depth; depth is --depth. Updated core/crawl_fallback.py to call xcrawl3r -u <url> only, with optional --depth when explicitly passed in code (default: none). Extended README.md with project overview, requirements, flags, profiles, output layout, and xcrawl3r note.
+
+Results:
+- Recon crawl step matches upstream CLI semantics; README supports onboarding.
+
+Analysis: Prevents silent misconfiguration where domain "2" was passed as -d.
+
+
+Day 5:
+Repository cleanup and March documentation
+Added .gitignore for venv, __pycache__, output/, redscanner.log, resume.cfg, local .env, OS junk, and capture files. Drafted March.txt to summarize the beta stack and integration notes for the month.
+
+Results:
+- Cleaner git status; concise technical notes separate from day-by-day work hours.
+
+Analysis: Keeps secrets and generated artifacts out of version control by default.
+
+
+Day 6:
+End-to-end runs against the lab target (sec-test.skycloud.tw)
+Ran full and lite profiles with tools on PATH where available; reviewed output trees (recon/, sqlmap/, nikto/), timing, and log noise. Tuned understanding of --max-deep (dalfox/sqlmap/api_leak) versus full surface for nuclei to avoid runaway runtime on large wayback lists.
+
+Results:
+- Confirmed reports land under output/<target>/<timestamp>/; redscanner.log useful for tracing skipped tools.
+- Noted that subfinder may return zero hosts for some targets; httpx still probes the primary domain and seeds from the plan.
+
+Analysis: Operational limits should stay documented in README; optional future flag for “assets-only” deep scans.
+
+
+Day 7:
+Profile strategy and plan alignment
+Compared automation coverage to the written red-team methodology (frameworks listed in red_plan.json: MITRE, PTES, OWASP WSTG, NIST 800-115). Mapped which steps stay manual (Burp, ZAP, bulk_extractor, OSINT portals) versus what RedScanner automates. Validated that “lite” profile suits quick regression while “full” matches extended assessment.
+
+Results:
+- Clear split: pipeline = repeatable baseline; manual_phases in JSON = operator checklist for items not wrapped in Python.
+
+Analysis: Avoids over-claiming coverage; beta label remains appropriate until more modules or APIs are integrated.
+
+
+Day 8:
+Month wrap-up and backlog
+Completed WorkHours_March.txt (Day 1–8). Summarized lessons: orchestration works, reporting is richer, xcrawl3r and link behavior fixed, repo hygiene in place. Backlog for next iteration: optional requirements.txt if pure-Python deps are added, smoke test script, safer defaults for sqlmap scope on huge URL lists, and optional integration tests with mocked tool output.
+
+Results:
+- March.txt + WorkHours_March.txt document the beta for March; README points new users to usage and flags.
+
+Analysis: Beta suitable for internal/lab use; production hardening and authorization workflows remain out of scope for this drop.

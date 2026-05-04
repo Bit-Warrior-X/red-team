@@ -1,0 +1,36 @@
+http://sec-test.skycloud.tw
+sec-test.skycloud.tw
+
+Beta automation — RedScanner (internal orchestrator)
+Project: Python 3 asyncio pipeline in repo root (main.py), chaining external CLIs with unified reporting.
+
+Stack exercised:
+- recon: subfinder, assetfinder (optional), httpx, xcrawl3r or curl HTML fallback for crawl
+- wayback: waybackurls + gau (optional)
+- naabu: port scan (optional)
+- nuclei: template-based scanning
+- xss: dalfox
+- sqli: sqlmap
+- api_leak: pattern scan on JS URLs (curl + regex patterns)
+- nikto: web server probe (optional)
+
+Configuration:
+- assets/red_plan.json — default domain, base_url, profiles (full, lite, attack-surface, etc.), manual_phases, methodology_frameworks, research_references
+
+Results:
+- full profile runs recon → wayback → naabu → nuclei → xss → sqli → api_leak → nikto when tools are on PATH; missing tools log a warning and skip.
+- Output per run: output/<target>/<timestamp>/ with report.html, report.md, report.json, surface.json, results.db, recon/ artifacts (subdomains.txt, crawled_urls.txt, naabu_*, wayback_gau_urls.txt), sqlmap/, nikto/
+
+xcrawl3r integration note:
+- Upstream xcrawl3r v1.2+: -d / --domain is scope, not depth; depth is --depth. Pipeline invokes: xcrawl3r -u <url> (no mistaken -d for depth).
+
+Reporting:
+- surface.json and report.json include domains, crawled URLs, historical URLs, scan surface URLs, open ports, http assets, and aggregated query parameters.
+- HTML report: clickable http(s) links; localhost/127.0.0.1 rewritten to base_url from red_plan for correct one-click navigation.
+
+Repository hygiene:
+- README.md documents usage, profiles, CLI flags, output layout.
+- .gitignore excludes venv/, output/, logs, resume.cfg, .env, etc.
+
+Further work:
+- Optional: integrate external mantra binary for JS secrets; expand nuclei template sets; tune sqlmap scope for large wayback lists.

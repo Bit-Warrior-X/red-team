@@ -26,7 +26,6 @@ test Final OWASP
 https://github.com/owasp-amass
 
 
-
 Generates permutations, alterations and mutations of subdomains and then resolves them
 Project : https://github.com/infosec-au/altdns
 Result : sec-test-admin.skycloud.tw
