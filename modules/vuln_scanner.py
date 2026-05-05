@@ -1,6 +1,11 @@
-
 # ============================================================
-# modules/vuln_scanner.py - Nuclei Integration
+# modules/vuln_scanner.py - Nuclei Integration (enhanced)
+# ============================================================
+#
+# Improvements:
+# - First-class nuclei_tags / nuclei_exclude_tags support from
+#   red_plan.json (e.g. -tags cve,oast; -etags dos,fuzz)
+# - nuclei_extra_args still supported for arbitrary flags
 # ============================================================
 
 
@@ -26,11 +31,39 @@ class VulnScanner:
             f.write("\n".join(targets))
             input_file = f.name
 
+        cmd = [
+            self.config.nuclei_path,
+            "-l",
+            input_file,
+            "-json",
+            "-silent",
+            "-severity",
+            "critical,high,medium,low",
+            "-rate-limit",
+            str(self.config.rate_limit),
+            "-c",
+            str(self.config.threads),
+        ]
+
+        # First-class template tag control
+        if self.config.nuclei_tags:
+            tag_str = ",".join(t.strip() for t in self.config.nuclei_tags if t.strip())
+            if tag_str:
+                cmd.extend(["-tags", tag_str])
+                log.info("Nuclei template include tags: %s", tag_str)
+        if self.config.nuclei_exclude_tags:
+            etag_str = ",".join(t.strip() for t in self.config.nuclei_exclude_tags if t.strip())
+            if etag_str:
+                cmd.extend(["-etags", etag_str])
+                log.info("Nuclei template exclude tags: %s", etag_str)
+
+        # Extra arbitrary args (backward compatible)
+        for arg in self.config.nuclei_extra_args:
+            if isinstance(arg, str) and arg.strip():
+                cmd.append(arg.strip())
+
         result = await run_tool(
-            [self.config.nuclei_path, "-l", input_file, "-json", "-silent",
-             "-severity", "critical,high,medium,low",
-             "-rate-limit", str(self.config.rate_limit),
-             "-c", str(self.config.threads)],
+            cmd,
             timeout=600,
             parse_json_lines=True,
         )

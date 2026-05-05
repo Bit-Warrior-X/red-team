@@ -1,8 +1,13 @@
 {
   "title": "Red team engagement plan",
-  "description": "Web assessment automation: ProjectDiscovery stack (subfinder, httpx, naabu), nuclei, dalfox, sqlmap, xcrawl3r, waybackurls/gau, nikto, and JS secret patterns (api_leak). Manual phases list follow-up work outside this pipeline.",
+  "description": "Web assessment automation: ProjectDiscovery stack (subfinder, httpx, naabu), nuclei, dalfox, sqlmap, xcrawl3r, waybackurls/gau, nikto, JS secret patterns (api_leak), and HTTP security header analysis (header_check). April focus: vulnerability discovery for the configured domain — use profile april-vuln (lite + wayback + header_check, no naabu/nikto) or full for all modules; optional strict_domain_reports, nuclei_extra_args, nuclei_tags, and nuclei_exclude_tags.",
   "domain": "sec-test.skycloud.tw",
   "base_url": "http://sec-test.skycloud.tw",
+  "strict_domain_reports": false,
+  "nuclei_extra_args": [],
+  "nuclei_tags": [],
+  "nuclei_exclude_tags": ["dos"],
+  "header_check_enabled": true,
   "methodology_frameworks": [
     "MITRE ATT&CK (Enterprise + Cloud + Recon)",
     "PTES — Penetration Testing Execution Standard",
@@ -10,75 +15,60 @@
     "NIST SP 800-115 — Technical Guide for Security Testing"
   ],
   "profiles": {
-    "full": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "nikto"],
-    "lite": ["recon", "nuclei", "xss", "sqli", "api_leak"],
-    "red-team": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "nikto"],
+    "full": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "nikto"],
+    "lite": ["recon", "nuclei", "xss", "sqli", "api_leak", "header_check"],
+    "red-team": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "nikto"],
     "attack-surface": ["recon", "wayback", "naabu", "nuclei"],
     "recon-only": ["recon"],
     "vuln-only": ["nuclei", "xss", "sqli"],
     "quick": ["recon", "nuclei"],
-    "osint-prep": ["recon", "wayback"]
+    "osint-prep": ["recon", "wayback"],
+    "april-vuln": ["recon", "wayback", "nuclei", "xss", "sqli", "api_leak", "header_check"],
+    "header-only": ["recon", "header_check"]
   },
   "manual_phases": [
     {
+      "name": "April — vulnerability discovery for the scoped domain",
+      "tasks": [
+        "Run april-vuln (vuln-focused) or full (adds naabu + nikto) against the authorized hostname; enable strict_domain_reports (or --strict-domain) for customer-facing reports that exclude off-host noise",
+        "Optionally set nuclei_extra_args in red_plan.json (e.g. [\"-as\"] for active scan) after reviewing nuclei documentation and rate limits",
+        "Use nuclei_tags (e.g. [\"cve\",\"oast\"]) and nuclei_exclude_tags (e.g. [\"dos\",\"fuzz\"]) to focus template selection",
+        "Review header_check findings for missing security headers (HSTS, CSP, X-Frame-Options) — quick wins for hardening reports",
+        "Triangulate nuclei/dalfox/sqlmap hits with Burp/ZAP; confirm impact before reporting"
+      ]
+    },
+    {
       "name": "OSINT and passive mapping",
       "tasks": [
-        "OsintLab / OSINT Framework / web-check / urlscan.io / osint.tools — map metadata and relations",
-        "DNSDumpster + Censys on CDN edge IP; compare DNS completeness vs production baselines",
-        "Synapsint, SubdomainRadar, URLVoid for reputation and exposure",
-        "SpiderFoot, crt.sh — certificate transparency and passive intel"
+        "Certificate Transparency logs",
+        "Shodan / Censys reconnaissance",
+        "DNS zone walk / AXFR attempt",
+        "Google dork enumeration"
       ]
     },
     {
-      "name": "Active recon and DNS",
+      "name": "Manual web application testing",
       "tasks": [
-        "MassDNS, dnsx — validate hosts; zone transfer checks where in scope",
-        "subfinder + httpx + naabu — confirm live hosts and ports",
-        "Origin leak / real-IP discovery — correlate with attack platform and CDN roles"
+        "Burp Suite / ZAP proxy interception",
+        "Authentication and session testing",
+        "Business logic flaw analysis",
+        "File upload and path traversal",
+        "CSRF, IDOR, privilege escalation"
       ]
     },
     {
-      "name": "Web and CDN testing (manual)",
+      "name": "Post-exploitation (if in scope)",
       "tasks": [
-        "Burp Suite Pro + domain_hunter_pro; OWASP ZAP for proxy, spider, fuzzing",
-        "CDN/cache: poisoning, deception, bypass, HTTP smuggling (CL.TE / TE.CL), H2 issues — lab only",
-        "Jaeles, Nmap + NSE, testssl.sh — supplementary to automated nuclei/naabu/nikto",
-        "HExHTTP, 403jump, gobuster — tune wordlists for the target"
-      ]
-    },
-    {
-      "name": "Traffic and artifacts",
-      "tasks": [
-        "tcpdump / mirror site → bulk_extractor on PCAP or downloaded tree",
-        "Mantra on JS URL lists: waybackurls|gau → .js → patterns (partially covered by api_leak module)"
-      ]
-    },
-    {
-      "name": "Reporting and blue-team handoff",
-      "tasks": [
-        "CVSS v3.1 + business impact, PoC, remediation",
-        "Mend Red-Teaming-Practical-Guide PDF for narrative structure"
+        "Credential reuse / lateral movement simulation",
+        "Data exfiltration proof-of-concept",
+        "Cloud metadata endpoint access"
       ]
     }
   ],
   "research_references": [
-    "https://www.mend.io/wp-content/uploads/2025/09/Red-Teaming-Practical-Guide.pdf",
-    "https://github.com/projectdiscovery/subfinder",
-    "https://github.com/projectdiscovery/httpx",
-    "https://github.com/projectdiscovery/naabu",
-    "https://github.com/projectdiscovery/nuclei",
-    "https://github.com/hahwul/dalfox",
-    "https://github.com/sqlmapproject/sqlmap",
-    "https://github.com/hueristiq/xcrawl3r",
-    "https://github.com/tomnomnom/waybackurls",
-    "https://github.com/lc/gau",
-    "https://github.com/tomnomnom/assetfinder",
-    "https://github.com/sullo/nikto",
-    "https://github.com/brosck/mantra",
-    "https://github.com/bit4woo/domain_hunter_pro",
-    "https://github.com/jaeles-project/jaeles",
-    "https://github.com/owasp-amass/amass",
-    "https://github.com/bst04/CyberSources",
-    "https://github.com/wddadk/Offensive-OSINT-Tools"
+    "https://attack.mitre.org/techniques/enterprise/",
+    "https://owasp.org/www-project-web-security-testing-guide/",
+    "https://nvd.nist.gov/",
+    "https://nuclei.projectdiscovery.io/"
   ]
 }

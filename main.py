@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from modules.api_leak_scanner import APILeakScanner
+from modules.header_scanner import HeaderScanner
 from modules.naabu_scanner import NaabuScanner
 from modules.nikto_scanner import NiktoScanner
 from modules.recon import ReconEngine
@@ -32,6 +33,7 @@ from core.config import ScanConfig
 from core.db import ResultsDB
 from core.models import ScanResult, Vulnerability
 from core.red_plan import load_red_plan, merge_profiles
+from core.domain_scope import finding_matches_target
 from core.surface import open_ports_from_vulns
 
 logging.basicConfig(
@@ -55,9 +57,10 @@ PROFILES: dict[str, list[str]] = {
         "xss",
         "sqli",
         "api_leak",
+        "header_check",
         "nikto",
     ],
-    "lite": ["recon", "nuclei", "xss", "sqli", "api_leak"],
+    "lite": ["recon", "nuclei", "xss", "sqli", "api_leak", "header_check"],
     "red-team": [
         "recon",
         "wayback",
@@ -66,11 +69,13 @@ PROFILES: dict[str, list[str]] = {
         "xss",
         "sqli",
         "api_leak",
+        "header_check",
         "nikto",
     ],
     "recon-only": ["recon"],
     "vuln-only": ["nuclei", "xss", "sqli"],
     "quick": ["recon", "nuclei"],
+    "header-only": ["recon", "header_check"],
 }
 
 # Execution order for any subset of modules
@@ -82,6 +87,7 @@ MODULE_ORDER = [
     "xss",
     "sqli",
     "api_leak",
+    "header_check",
     "nikto",
 ]
 
@@ -152,6 +158,17 @@ class RedScanner:
             await self._run_module(name)
 
         self.results.vulnerabilities = self._deduplicate(self.results.vulnerabilities)
+        if self.config.strict_domain_reports:
+            before = len(self.results.vulnerabilities)
+            self.results.vulnerabilities = [
+                v for v in self.results.vulnerabilities if finding_matches_target(v, self.config.target)
+            ]
+            log.info(
+                "Strict domain filter: %s findings kept (%s removed outside %s)",
+                len(self.results.vulnerabilities),
+                before - len(self.results.vulnerabilities),
+                self.config.target,
+            )
         self.results.finished_at = datetime.now()
         self._finalize_surface()
         self.db.save_vulns(self.scan_id, self.results.vulnerabilities)
@@ -214,7 +231,11 @@ class RedScanner:
             log.info("=" * 60)
             log.info("PHASE: XSS (dalfox)")
             log.info("=" * 60)
-            vulns = await XSSScanner(self.config).run(self._deep_targets())
+            # Enhanced: pass crawled URLs with query parameters for broader surface
+            vulns = await XSSScanner(self.config).run(
+                self._deep_targets(),
+                crawled_urls=self._crawled_urls,
+            )
             self.results.vulnerabilities.extend(vulns)
             self.results.modules_run.append("xss")
             log.info("Dalfox reported %s findings", len(vulns))
@@ -238,6 +259,20 @@ class RedScanner:
             self.results.vulnerabilities.extend(vulns)
             self.results.modules_run.append("api_leak")
             log.info("API leak scan reported %s findings", len(vulns))
+            return
+
+        if name == "header_check":
+            log.info("=" * 60)
+            log.info("PHASE: HTTP Security Headers")
+            log.info("=" * 60)
+            if not self.config.header_check_enabled:
+                log.info("Header check disabled in configuration — skipping")
+                self.results.modules_run.append("header_check")
+                return
+            targets = self._get_nikto_targets()  # same base-URL set as nikto
+            vulns = await HeaderScanner(self.config).run(targets)
+            self.results.vulnerabilities.extend(vulns)
+            self.results.modules_run.append("header_check")
             return
 
         if name == "nikto":
@@ -361,6 +396,16 @@ def parse_args():
         default=25,
         help="Max URLs for dalfox, sqlmap, api_leak (nuclei uses full list)",
     )
+    p.add_argument(
+        "--strict-domain",
+        action="store_true",
+        help="Only keep findings whose URL host matches -t or is its subdomain (also set strict_domain_reports in red_plan.json)",
+    )
+    p.add_argument(
+        "--no-header-check",
+        action="store_true",
+        help="Skip the HTTP security header check module",
+    )
     return p.parse_args()
 
 
@@ -408,6 +453,40 @@ def main():
     plan_title = plan.get("title") if isinstance(plan.get("title"), str) else None
     plan_desc = plan.get("description") if isinstance(plan.get("description"), str) else None
 
+    def _truthy(val) -> bool:
+        if val is True:
+            return True
+        if isinstance(val, str):
+            return val.strip().lower() in ("1", "true", "yes", "on")
+        return False
+
+    strict_domain = args.strict_domain or _truthy(plan.get("strict_domain_reports"))
+
+    nuclei_extra: list[str] = []
+    raw_extra = plan.get("nuclei_extra_args")
+    if isinstance(raw_extra, list):
+        nuclei_extra = [str(x).strip() for x in raw_extra if str(x).strip()]
+
+    # Nuclei template tag control
+    nuclei_tags: list[str] = []
+    raw_tags = plan.get("nuclei_tags")
+    if isinstance(raw_tags, list):
+        nuclei_tags = [str(x).strip() for x in raw_tags if str(x).strip()]
+
+    nuclei_exclude_tags: list[str] = []
+    raw_etags = plan.get("nuclei_exclude_tags")
+    if isinstance(raw_etags, list):
+        nuclei_exclude_tags = [str(x).strip() for x in raw_etags if str(x).strip()]
+
+    # Header check control
+    header_check_enabled = not args.no_header_check
+    if not header_check_enabled:
+        log.info("Header check disabled via --no-header-check")
+    elif _truthy(plan.get("header_check_enabled")) is False and plan.get("header_check_enabled") is not None:
+        # Only disable if explicitly set to false in JSON
+        if plan.get("header_check_enabled") is False:
+            header_check_enabled = False
+
     config = ScanConfig(
         target=target,
         modules=modules,
@@ -423,6 +502,11 @@ def main():
         methodology_frameworks=frameworks,
         max_wayback_urls=args.max_wayback,
         max_deep_scan_urls=args.max_deep,
+        strict_domain_reports=strict_domain,
+        nuclei_extra_args=nuclei_extra,
+        nuclei_tags=nuclei_tags,
+        nuclei_exclude_tags=nuclei_exclude_tags,
+        header_check_enabled=header_check_enabled,
     )
 
     scanner = RedScanner(config)

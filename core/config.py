@@ -1,4 +1,3 @@
-
 # ============================================================
 # core/config.py
 # ============================================================
@@ -31,6 +30,19 @@ class ScanConfig:
     max_wayback_urls: int = 500
     max_nikto_hosts: int = 8
     max_deep_scan_urls: int = 25  # dalfox, sqlmap, api_leak (nuclei uses full surface)
+
+    # April+ vulnerability focus (from red_plan.json / CLI)
+    strict_domain_reports: bool = False  # drop findings whose URL host is not target or subdomain
+    nuclei_extra_args: list[str] = field(default_factory=list)  # e.g. ["-as"] for active scan (use with care)
+
+    # Nuclei template tag control (from red_plan.json)
+    # Example: nuclei_tags=["cve","oast","tech"] → nuclei -tags cve,oast,tech
+    # Example: nuclei_exclude_tags=["dos","fuzz"] → nuclei -etags dos,fuzz
+    nuclei_tags: list[str] = field(default_factory=list)
+    nuclei_exclude_tags: list[str] = field(default_factory=list)
+
+    # Header security check (new module)
+    header_check_enabled: bool = True  # set to False in JSON to skip header checks
 
     # Tool paths (auto-detected or overridden)
     subfinder_path: str = "subfinder"

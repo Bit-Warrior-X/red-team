@@ -1,0 +1,122 @@
+Day 1:
+April kickoff — vulnerability discovery scope
+Defined April work around finding vulnerabilities for a single authorized domain using RedScanner profiles and report filtering. Updated assets/red_plan.json with **april-vuln** (lite + wayback) and an April manual phase; dropped redundant **april-full** (use **full** for naabu + nikto).
+ 
+Results:
+- april-vuln: recon → wayback → nuclei → xss → sqli → api_leak.
+- Broader April run: **full** (adds naabu + nikto on the same vuln module set).
+ 
+Analysis: Separating "vuln sprint" from full infra noise helps weekly runs on the lab target.
+ 
+ 
+Day 2:
+Strict domain reporting
+Implemented strict_domain_reports in plan (and --strict-domain CLI) so deduplicated findings are filtered to the target host and its subdomains before SQLite save and HTML/MD/JSON reports. Open tcp:// findings use parsed host for the same rule.
+ 
+Results:
+- core/domain_scope.py centralizes host matching with _host_from_finding_url() handling http/https and tcp:// URLs; host_under_target() checks exact match or subdomain suffix.
+- main.py filters self.results.vulnerabilities after deduplication and logs how many findings were removed.
+- HTML and Markdown reports include a scope note when strict filter is active.
+ 
+Analysis: Useful for customer deliverables; keep off during broad research to avoid hiding third-party CDN noise you still want to see.
+ 
+ 
+Day 3:
+Nuclei extensibility via red_plan.json
+Added nuclei_extra_args in red_plan.json, threaded through ScanConfig into VulnScanner so operators can append supported nuclei flags without editing Python (e.g. active scan after explicit approval).
+ 
+Results:
+- core/config.py: new field nuclei_extra_args: list[str] with default_factory=list.
+- modules/vuln_scanner.py: loop appends each arg.strip() to the nuclei command list after the base flags.
+- main.py: parses nuclei_extra_args from plan JSON, validates as list of strings.
+ 
+Analysis: Requires discipline—wrong flags can increase load or scope; pair with rate-limit and authorization.
+ 
+ 
+Day 4:
+Strict-domain filter in report generator and report.json output
+Extended the strict_domain_reports flag into the report layer. report.json now includes a strict_domain_reports boolean so downstream tooling knows whether the filter was active. Markdown report adds a domain-scope note when enabled. HTML report injects a scope paragraph above the vulnerability table.
+ 
+Results:
+- modules/report_generator.py: JSON data dict includes "strict_domain_reports" key; Markdown lines include scope note block; HTML strict_note paragraph injected into the page.
+- Verified that report.json, report.md, and report.html all consistently reflect the filter state.
+ 
+Analysis: Consumers of report.json (CI pipelines, dashboards) can programmatically check whether findings were scoped or unfiltered.
+ 
+ 
+Day 5:
+HTTP security header scanner module
+Built modules/header_scanner.py — new module that checks HTTP response headers against OWASP security baselines using curl -I (HEAD request). No extra tool installation needed beyond curl.
+ 
+Missing security header checks (7 headers):
+- Strict-Transport-Security (medium), Content-Security-Policy (medium), X-Content-Type-Options (low), X-Frame-Options (low), Referrer-Policy (low), Permissions-Policy (low), X-XSS-Protection (info).
+ 
+Information disclosure checks (3 headers):
+- Server, X-Powered-By, X-AspNet-Version — flags when present and leaking software/version info.
+ 
+Cookie security checks:
+- _check_cookies() parses Set-Cookie headers; reports missing Secure, HttpOnly, SameSite flags per cookie.
+ 
+Wired into main.py as the **header_check** module in MODULE_ORDER (runs after api_leak, before nikto). Added --no-header-check CLI flag and header_check_enabled in ScanConfig. Updated all default profiles (full, lite, red-team, april-vuln) to include header_check. Created new **header-only** profile (recon + header_check).
+ 
+Results:
+- modules/header_scanner.py: HeaderScanner class with _fetch_headers (curl -I, regex parse) and _check_cookies.
+- core/config.py: header_check_enabled: bool = True.
+- main.py: header_check block in _run_module, --no-header-check argument, config wiring.
+ 
+Analysis: Fills the WSTG-CONF gap where nuclei and nikto returned 0 configuration findings on the lab target. Header checks are fast and produce actionable hardening findings.
+ 
+ 
+Day 6:
+Enhanced XSS scanner — dalfox file mode on crawled parameterized URLs
+Rewrote modules/xss_scanner.py to fix the XSS surface gap: dalfox previously only received base URLs from _deep_targets(), missing the 618 crawled URLs from xcrawl3r.
+ 
+Changes:
+- XSSScanner.run() now accepts an optional crawled_urls parameter.
+- _extract_parameterized_urls() filters crawled URLs to those with query strings (real XSS candidates), capped by max_deep_scan_urls.
+- _run_pipe_mode() writes parameterized URLs to a temp file and invokes dalfox in **file mode** for bulk testing (longer 600s timeout).
+- Single-URL mode still runs per target for form-based XSS (backward compatible).
+- main.py passes self._crawled_urls to XSSScanner.run() in the xss module block.
+ 
+Results:
+- xss_scanner.py: _run_pipe_mode, _extract_parameterized_urls, _parse_finding (shared parser for both modes).
+- main.py xss block updated: XSSScanner(self.config).run(self._deep_targets(), crawled_urls=self._crawled_urls).
+ 
+Analysis: Previously 618 crawled URLs but 0 dalfox findings because only the root URL was tested. With file mode, any URL containing query parameters (?id=, ?page=, ?q=) now gets XSS-tested.
+ 
+ 
+Day 7:
+Nuclei template tag control — first-class -tags and -etags support
+Added nuclei_tags and nuclei_exclude_tags as dedicated config fields, separate from the catch-all nuclei_extra_args.
+ 
+Changes:
+- core/config.py: nuclei_tags: list[str] and nuclei_exclude_tags: list[str] with default_factory=list.
+- modules/vuln_scanner.py: builds -tags and -etags flags from config before appending nuclei_extra_args; logs tag configuration when active.
+- main.py: parses nuclei_tags and nuclei_exclude_tags from red_plan.json as validated string lists.
+- red_plan.json: added "nuclei_tags": [], "nuclei_exclude_tags": ["dos"] — excludes DoS templates by default to avoid disrupting the lab target.
+ 
+Results:
+- Operators can now set "nuclei_tags": ["cve","oast","tech"] in JSON to focus template selection without editing Python.
+- "nuclei_exclude_tags": ["dos","fuzz"] skips disruptive templates.
+- Backward compatible: nuclei_extra_args still works for arbitrary flags.
+ 
+Analysis: Template tag control was the most requested tuning mechanism after nuclei_extra_args. Having -etags dos as default prevents accidental service disruption on authorized targets.
+ 
+ 
+Day 8:
+Scan diff utility for regression tracking
+Built scan_diff.py as a standalone CLI tool to compare two RedScanner report.json files and identify what changed between scan runs.
+ 
+Implementation:
+- _finding_key() creates a stable identity tuple (url, vuln_type, parameter, evidence, tool) ignoring timestamps and raw_output.
+- diff_findings() computes new, resolved, and unchanged finding sets by comparing old vs new key maps.
+- diff_surface() compares surface sections: domain additions/removals, port changes, crawled URL counts, historical URL counts.
+- severity_summary() counts findings by severity for new and resolved sets.
+- format_text_report() outputs a human-readable text diff to stdout.
+- CLI: python scan_diff.py old.json new.json [--output diff.json] [--json-only].
+ 
+Results:
+- scan_diff.py (218 lines): load_report, diff_findings, diff_surface, format_text_report, severity_summary, main with argparse.
+- JSON output includes old_scan_id, new_scan_id, target, summary counts, new_findings array, resolved_findings array, and surface_diff object.
+ 
+Analysis: Previously comparing two scan runs required manually opening two report.html files side by side. scan_diff.py automates this — shows exactly which findings appeared or disappeared, useful for weekly regression checks.

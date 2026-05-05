@@ -785,3 +785,248 @@
 2026-04-07 15:40:24,877 [INFO] redscanner:   Critical: 7  High: 0  Medium: 0  Low: 0  Info: 3
 2026-04-07 15:40:24,877 [INFO] redscanner: Reports saved to: output/sec-test.skycloud.tw/20260407_153348
 2026-04-07 15:40:24,877 [INFO] redscanner: ============================================================
+2026-05-04 15:03:52,677 [INFO] redscanner: Starting scan 20260504_150352 against sec-test.skycloud.tw
+2026-05-04 15:03:52,677 [INFO] redscanner: Engagement plan: Red team engagement plan
+2026-05-04 15:03:52,678 [INFO] redscanner: Frameworks: MITRE ATT&CK (Enterprise + Cloud + Recon); PTES — Penetration Testing Execution Standard; OWASP Web Security Testing Guide (WSTG); NIST SP 800-115 — Technical Guide for Security Testing
+2026-05-04 15:03:52,678 [INFO] redscanner: Modules (ordered): recon, wayback, naabu, nuclei, xss, sqli, api_leak, nikto
+2026-05-04 15:03:52,678 [INFO] redscanner: Output: output/sec-test.skycloud.tw/20260504_150352
+2026-05-04 15:03:52,681 [INFO] redscanner: External tools on PATH: subfinder, httpx, assetfinder, xcrawl3r, waybackurls, gau, naabu, nuclei, dalfox, sqlmap, nikto
+2026-05-04 15:03:52,681 [INFO] redscanner: ============================================================
+2026-05-04 15:03:52,681 [INFO] redscanner: PHASE: Reconnaissance (subfinder, assetfinder, httpx, xcrawl3r)
+2026-05-04 15:03:52,681 [INFO] redscanner: ============================================================
+2026-05-04 15:03:52,681 [INFO] redscanner.runner: Running: subfinder -d sec-test.skycloud.tw -silent -all
+2026-05-04 15:04:13,682 [INFO] redscanner: subfinder found 0 subdomains
+2026-05-04 15:04:13,684 [INFO] redscanner.runner: Running: assetfinder sec-test.skycloud.tw
+2026-05-04 15:04:54,977 [INFO] redscanner: assetfinder added 1 hostnames
+2026-05-04 15:04:54,979 [INFO] redscanner.runner: Running: httpx -l /tmp/tmps_shx7cy.txt -json -status-code -title -tech-detect -silent
+2026-05-04 15:04:58,880 [INFO] redscanner.runner: Running: xcrawl3r -u http://sec-test.skycloud.tw
+2026-05-04 15:05:02,699 [INFO] redscanner: Crawled 618 URLs from alive hosts
+2026-05-04 15:05:02,702 [INFO] redscanner: Discovered 1 HTTP assets
+2026-05-04 15:05:02,702 [INFO] redscanner: ============================================================
+2026-05-04 15:05:02,702 [INFO] redscanner: PHASE: Historical URLs (waybackurls, gau)
+2026-05-04 15:05:02,702 [INFO] redscanner: ============================================================
+2026-05-04 15:05:02,703 [INFO] redscanner.runner: Running: waybackurls
+2026-05-04 15:05:08,030 [INFO] redscanner.runner: Running: gau sec-test.skycloud.tw
+2026-05-04 15:07:08,050 [ERROR] redscanner.runner: Tool timed out after 120s: gau
+2026-05-04 15:07:08,051 [INFO] redscanner: Wayback/gau collected 0 URLs (cap 500)
+2026-05-04 15:07:08,051 [INFO] redscanner: Collected 0 historical URLs for downstream scanners
+2026-05-04 15:07:08,051 [INFO] redscanner: ============================================================
+2026-05-04 15:07:08,051 [INFO] redscanner: PHASE: Port scan (naabu)
+2026-05-04 15:07:08,051 [INFO] redscanner: ============================================================
+2026-05-04 15:07:08,053 [INFO] redscanner.runner: Running: naabu -l output/sec-test.skycloud.tw/20260504_150352/recon/naabu_hosts.txt -silent -top-ports 1000 -rate 500
+2026-05-04 15:07:21,624 [INFO] redscanner: naabu reported 3 open ports (info findings)
+2026-05-04 15:07:21,624 [INFO] redscanner: ============================================================
+2026-05-04 15:07:21,625 [INFO] redscanner: PHASE: Nuclei
+2026-05-04 15:07:21,625 [INFO] redscanner: ============================================================
+2026-05-04 15:07:21,626 [INFO] redscanner.runner: Running: nuclei -l /tmp/tmpz5au59it.txt -json -silent -severity critical,high,medium,low -rate-limit 50 -c 10
+2026-05-04 15:07:22,230 [INFO] redscanner: Nuclei reported 0 findings
+2026-05-04 15:07:22,230 [INFO] redscanner: ============================================================
+2026-05-04 15:07:22,231 [INFO] redscanner: PHASE: XSS (dalfox)
+2026-05-04 15:07:22,231 [INFO] redscanner: ============================================================
+2026-05-04 15:07:22,231 [INFO] redscanner.runner: Running: dalfox url http://sec-test.skycloud.tw --format json --silence --timeout 30 --worker 10
+2026-05-04 15:07:35,018 [INFO] redscanner: Dalfox reported 0 findings
+2026-05-04 15:07:35,018 [INFO] redscanner: ============================================================
+2026-05-04 15:07:35,019 [INFO] redscanner: PHASE: SQLi (sqlmap)
+2026-05-04 15:07:35,019 [INFO] redscanner: ============================================================
+2026-05-04 15:07:35,019 [INFO] redscanner.runner: Running: sqlmap -u http://sec-test.skycloud.tw --batch --smart --level 2 --risk 1 --output-dir output/sec-test.skycloud.tw/20260504_150352/sqlmap --forms --crawl=2
+2026-05-04 15:08:01,494 [INFO] redscanner: SQLmap reported 10 findings
+2026-05-04 15:08:01,495 [INFO] redscanner: ============================================================
+2026-05-04 15:08:01,495 [INFO] redscanner: PHASE: API / secret patterns in JS
+2026-05-04 15:08:01,495 [INFO] redscanner: ============================================================
+2026-05-04 15:08:01,496 [INFO] redscanner.runner: Running: xcrawl3r -u http://sec-test.skycloud.tw
+2026-05-04 15:08:02,653 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://code.jquery.com/jquery-3.6.0.js
+2026-05-04 15:08:02,879 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/jquery.cookie.js
+2026-05-04 15:08:02,991 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/bootstrap4.6/bootstrap.bundle.min.js
+2026-05-04 15:08:03,232 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/swiper/swiper-bundle.js
+2026-05-04 15:08:03,645 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/sweetalert2/sweetalert2.min.js
+2026-05-04 15:08:03,872 [INFO] redscanner: API leak scan reported 0 findings
+2026-05-04 15:08:03,872 [INFO] redscanner: ============================================================
+2026-05-04 15:08:03,872 [INFO] redscanner: PHASE: Nikto
+2026-05-04 15:08:03,873 [INFO] redscanner: ============================================================
+2026-05-04 15:08:03,873 [INFO] redscanner.runner: Running: nikto -h http://sec-test.skycloud.tw -maxtime 120s -useragent Mozilla/5.0
+2026-05-04 15:08:04,030 [INFO] redscanner: nikto pass complete (1 hosts), parsed 0 lines
+2026-05-04 15:08:04,030 [INFO] redscanner: Nikto parsed 0 notable lines
+2026-05-04 15:08:04,033 [INFO] redscanner: ============================================================
+2026-05-04 15:08:04,033 [INFO] redscanner: Generating Reports
+2026-05-04 15:08:04,034 [INFO] redscanner: ============================================================
+2026-05-04 15:08:04,035 [INFO] redscanner.report: JSON report: output/sec-test.skycloud.tw/20260504_150352/report.json
+2026-05-04 15:08:04,036 [INFO] redscanner.report: Surface JSON: output/sec-test.skycloud.tw/20260504_150352/surface.json
+2026-05-04 15:08:04,046 [INFO] redscanner.report: Markdown report: output/sec-test.skycloud.tw/20260504_150352/report.md
+2026-05-04 15:08:04,056 [INFO] redscanner.report: HTML report: output/sec-test.skycloud.tw/20260504_150352/report.html
+2026-05-04 15:08:04,056 [INFO] redscanner.report: Reports written to output/sec-test.skycloud.tw/20260504_150352
+2026-05-04 15:08:04,056 [INFO] redscanner: 
+2026-05-04 15:08:04,056 [INFO] redscanner: ============================================================
+2026-05-04 15:08:04,056 [INFO] redscanner: SCAN COMPLETE — 20260504_150352
+2026-05-04 15:08:04,056 [INFO] redscanner: Target: sec-test.skycloud.tw
+2026-05-04 15:08:04,056 [INFO] redscanner: Duration: 251.4s
+2026-05-04 15:08:04,056 [INFO] redscanner: Assets discovered: 1
+2026-05-04 15:08:04,056 [INFO] redscanner: Total findings: 10
+2026-05-04 15:08:04,056 [INFO] redscanner:   Critical: 7  High: 0  Medium: 0  Low: 0  Info: 3
+2026-05-04 15:08:04,056 [INFO] redscanner: Reports saved to: output/sec-test.skycloud.tw/20260504_150352
+2026-05-04 15:08:04,057 [INFO] redscanner: ============================================================
+2026-05-04 22:44:57,266 [INFO] redscanner: Starting scan 20260504_224457 against sec-test.skycloud.tw
+2026-05-04 22:44:57,266 [INFO] redscanner: Engagement plan: Red team engagement plan
+2026-05-04 22:44:57,266 [INFO] redscanner: Frameworks: MITRE ATT&CK (Enterprise + Cloud + Recon); PTES — Penetration Testing Execution Standard; OWASP Web Security Testing Guide (WSTG); NIST SP 800-115 — Technical Guide for Security Testing
+2026-05-04 22:44:57,267 [INFO] redscanner: Modules (ordered): recon, wayback, naabu, nuclei, xss, sqli, api_leak, nikto
+2026-05-04 22:44:57,267 [INFO] redscanner: Output: output/sec-test.skycloud.tw/20260504_224457
+2026-05-04 22:44:57,269 [INFO] redscanner: External tools on PATH: subfinder, httpx, assetfinder, xcrawl3r, waybackurls, gau, naabu, nuclei, dalfox, sqlmap, nikto
+2026-05-04 22:44:57,269 [INFO] redscanner: ============================================================
+2026-05-04 22:44:57,269 [INFO] redscanner: PHASE: Reconnaissance (subfinder, assetfinder, httpx, xcrawl3r)
+2026-05-04 22:44:57,269 [INFO] redscanner: ============================================================
+2026-05-04 22:44:57,270 [INFO] redscanner.runner: Running: subfinder -d sec-test.skycloud.tw -silent -all
+2026-05-04 22:45:27,496 [INFO] redscanner: subfinder found 0 subdomains
+2026-05-04 22:45:27,497 [INFO] redscanner.runner: Running: assetfinder sec-test.skycloud.tw
+2026-05-04 22:46:00,143 [INFO] redscanner: assetfinder added 1 hostnames
+2026-05-04 22:46:00,145 [INFO] redscanner.runner: Running: httpx -l /tmp/tmpxyy9q_fx.txt -json -status-code -title -tech-detect -silent
+2026-05-04 22:46:03,951 [INFO] redscanner.runner: Running: xcrawl3r -u http://sec-test.skycloud.tw
+2026-05-04 22:46:07,972 [INFO] redscanner: Crawled 618 URLs from alive hosts
+2026-05-04 22:46:07,975 [INFO] redscanner: Discovered 1 HTTP assets
+2026-05-04 22:46:07,975 [INFO] redscanner: ============================================================
+2026-05-04 22:46:07,975 [INFO] redscanner: PHASE: Historical URLs (waybackurls, gau)
+2026-05-04 22:46:07,976 [INFO] redscanner: ============================================================
+2026-05-04 22:46:07,976 [INFO] redscanner.runner: Running: waybackurls
+2026-05-04 22:47:07,637 [INFO] redscanner.runner: Running: gau sec-test.skycloud.tw
+2026-05-04 22:47:55,161 [INFO] redscanner: Wayback/gau collected 0 URLs (cap 500)
+2026-05-04 22:47:55,161 [INFO] redscanner: Collected 0 historical URLs for downstream scanners
+2026-05-04 22:47:55,161 [INFO] redscanner: ============================================================
+2026-05-04 22:47:55,162 [INFO] redscanner: PHASE: Port scan (naabu)
+2026-05-04 22:47:55,162 [INFO] redscanner: ============================================================
+2026-05-04 22:47:55,163 [INFO] redscanner.runner: Running: naabu -l output/sec-test.skycloud.tw/20260504_224457/recon/naabu_hosts.txt -silent -top-ports 1000 -rate 500
+2026-05-04 22:48:08,021 [INFO] redscanner: naabu reported 3 open ports (info findings)
+2026-05-04 22:48:08,021 [INFO] redscanner: ============================================================
+2026-05-04 22:48:08,022 [INFO] redscanner: PHASE: Nuclei
+2026-05-04 22:48:08,022 [INFO] redscanner: ============================================================
+2026-05-04 22:48:08,023 [INFO] redscanner.runner: Running: nuclei -l /tmp/tmpycqkljm_.txt -json -silent -severity critical,high,medium,low -rate-limit 50 -c 10
+2026-05-04 22:48:08,317 [INFO] redscanner: Nuclei reported 0 findings
+2026-05-04 22:48:08,317 [INFO] redscanner: ============================================================
+2026-05-04 22:48:08,318 [INFO] redscanner: PHASE: XSS (dalfox)
+2026-05-04 22:48:08,318 [INFO] redscanner: ============================================================
+2026-05-04 22:48:08,318 [INFO] redscanner.runner: Running: dalfox url http://sec-test.skycloud.tw --format json --silence --timeout 30 --worker 10
+2026-05-04 22:48:19,561 [INFO] redscanner: Dalfox reported 0 findings
+2026-05-04 22:48:19,562 [INFO] redscanner: ============================================================
+2026-05-04 22:48:19,562 [INFO] redscanner: PHASE: SQLi (sqlmap)
+2026-05-04 22:48:19,562 [INFO] redscanner: ============================================================
+2026-05-04 22:48:19,562 [INFO] redscanner.runner: Running: sqlmap -u http://sec-test.skycloud.tw --batch --smart --level 2 --risk 1 --output-dir output/sec-test.skycloud.tw/20260504_224457/sqlmap --forms --crawl=2
+2026-05-04 22:48:44,977 [INFO] redscanner: SQLmap reported 10 findings
+2026-05-04 22:48:44,977 [INFO] redscanner: ============================================================
+2026-05-04 22:48:44,977 [INFO] redscanner: PHASE: API / secret patterns in JS
+2026-05-04 22:48:44,977 [INFO] redscanner: ============================================================
+2026-05-04 22:48:44,978 [INFO] redscanner.runner: Running: xcrawl3r -u http://sec-test.skycloud.tw
+2026-05-04 22:48:46,117 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://code.jquery.com/jquery-3.6.0.js
+2026-05-04 22:48:46,343 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/jquery.cookie.js
+2026-05-04 22:48:46,461 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/bootstrap4.6/bootstrap.bundle.min.js
+2026-05-04 22:48:46,706 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/swiper/swiper-bundle.js
+2026-05-04 22:48:47,109 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/sweetalert2/sweetalert2.min.js
+2026-05-04 22:48:47,576 [INFO] redscanner: API leak scan reported 0 findings
+2026-05-04 22:48:47,577 [INFO] redscanner: ============================================================
+2026-05-04 22:48:47,577 [INFO] redscanner: PHASE: Nikto
+2026-05-04 22:48:47,577 [INFO] redscanner: ============================================================
+2026-05-04 22:48:47,578 [INFO] redscanner.runner: Running: nikto -h http://sec-test.skycloud.tw -maxtime 120s -useragent Mozilla/5.0
+2026-05-04 22:48:47,710 [INFO] redscanner: nikto pass complete (1 hosts), parsed 0 lines
+2026-05-04 22:48:47,710 [INFO] redscanner: Nikto parsed 0 notable lines
+2026-05-04 22:48:47,710 [INFO] redscanner: Strict domain filter: 10 findings kept (0 removed outside sec-test.skycloud.tw)
+2026-05-04 22:48:47,714 [INFO] redscanner: ============================================================
+2026-05-04 22:48:47,714 [INFO] redscanner: Generating Reports
+2026-05-04 22:48:47,714 [INFO] redscanner: ============================================================
+2026-05-04 22:48:47,716 [INFO] redscanner.report: JSON report: output/sec-test.skycloud.tw/20260504_224457/report.json
+2026-05-04 22:48:47,717 [INFO] redscanner.report: Surface JSON: output/sec-test.skycloud.tw/20260504_224457/surface.json
+2026-05-04 22:48:47,726 [INFO] redscanner.report: Markdown report: output/sec-test.skycloud.tw/20260504_224457/report.md
+2026-05-04 22:48:47,736 [INFO] redscanner.report: HTML report: output/sec-test.skycloud.tw/20260504_224457/report.html
+2026-05-04 22:48:47,736 [INFO] redscanner.report: Reports written to output/sec-test.skycloud.tw/20260504_224457
+2026-05-04 22:48:47,736 [INFO] redscanner: 
+2026-05-04 22:48:47,736 [INFO] redscanner: ============================================================
+2026-05-04 22:48:47,736 [INFO] redscanner: SCAN COMPLETE — 20260504_224457
+2026-05-04 22:48:47,736 [INFO] redscanner: Target: sec-test.skycloud.tw
+2026-05-04 22:48:47,737 [INFO] redscanner: Duration: 230.4s
+2026-05-04 22:48:47,737 [INFO] redscanner: Assets discovered: 1
+2026-05-04 22:48:47,737 [INFO] redscanner: Total findings: 10
+2026-05-04 22:48:47,737 [INFO] redscanner:   Critical: 7  High: 0  Medium: 0  Low: 0  Info: 3
+2026-05-04 22:48:47,737 [INFO] redscanner: Reports saved to: output/sec-test.skycloud.tw/20260504_224457
+2026-05-04 22:48:47,737 [INFO] redscanner: ============================================================
+2026-05-05 00:15:17,526 [INFO] redscanner: Starting scan 20260505_001517 against sec-test.skycloud.tw
+2026-05-05 00:15:17,527 [INFO] redscanner: Engagement plan: Red team engagement plan
+2026-05-05 00:15:17,527 [INFO] redscanner: Frameworks: MITRE ATT&CK (Enterprise + Cloud + Recon); PTES — Penetration Testing Execution Standard; OWASP Web Security Testing Guide (WSTG); NIST SP 800-115 — Technical Guide for Security Testing
+2026-05-05 00:15:17,527 [INFO] redscanner: Modules (ordered): recon, wayback, naabu, nuclei, xss, sqli, api_leak, header_check, nikto
+2026-05-05 00:15:17,527 [INFO] redscanner: Output: output/sec-test.skycloud.tw/20260505_001517
+2026-05-05 00:15:17,529 [INFO] redscanner: External tools on PATH: subfinder, httpx, assetfinder, xcrawl3r, waybackurls, gau, naabu, nuclei, dalfox, sqlmap, nikto
+2026-05-05 00:15:17,530 [INFO] redscanner: ============================================================
+2026-05-05 00:15:17,530 [INFO] redscanner: PHASE: Reconnaissance (subfinder, assetfinder, httpx, xcrawl3r)
+2026-05-05 00:15:17,530 [INFO] redscanner: ============================================================
+2026-05-05 00:15:17,530 [INFO] redscanner.runner: Running: subfinder -d sec-test.skycloud.tw -silent -all
+2026-05-05 00:15:47,749 [INFO] redscanner: subfinder found 0 subdomains
+2026-05-05 00:15:47,750 [INFO] redscanner.runner: Running: assetfinder sec-test.skycloud.tw
+2026-05-05 00:15:48,897 [INFO] redscanner: assetfinder added 1 hostnames
+2026-05-05 00:15:48,899 [INFO] redscanner.runner: Running: httpx -l /tmp/tmpjctxn285.txt -json -status-code -title -tech-detect -silent
+2026-05-05 00:15:52,641 [INFO] redscanner.runner: Running: xcrawl3r -u http://sec-test.skycloud.tw
+2026-05-05 00:15:55,822 [INFO] redscanner: Crawled 618 URLs from alive hosts
+2026-05-05 00:15:55,825 [INFO] redscanner: Discovered 1 HTTP assets
+2026-05-05 00:15:55,825 [INFO] redscanner: ============================================================
+2026-05-05 00:15:55,825 [INFO] redscanner: PHASE: Historical URLs (waybackurls, gau)
+2026-05-05 00:15:55,825 [INFO] redscanner: ============================================================
+2026-05-05 00:15:55,826 [INFO] redscanner.runner: Running: waybackurls
+2026-05-05 00:16:15,981 [INFO] redscanner.runner: Running: gau sec-test.skycloud.tw
+2026-05-05 00:18:16,084 [ERROR] redscanner.runner: Tool timed out after 120s: gau
+2026-05-05 00:18:16,085 [INFO] redscanner: Wayback/gau collected 0 URLs (cap 500)
+2026-05-05 00:18:16,085 [INFO] redscanner: Collected 0 historical URLs for downstream scanners
+2026-05-05 00:18:16,086 [INFO] redscanner: ============================================================
+2026-05-05 00:18:16,086 [INFO] redscanner: PHASE: Port scan (naabu)
+2026-05-05 00:18:16,086 [INFO] redscanner: ============================================================
+2026-05-05 00:18:16,087 [INFO] redscanner.runner: Running: naabu -l output/sec-test.skycloud.tw/20260505_001517/recon/naabu_hosts.txt -silent -top-ports 1000 -rate 500
+2026-05-05 00:18:29,558 [INFO] redscanner: naabu reported 3 open ports (info findings)
+2026-05-05 00:18:29,558 [INFO] redscanner: ============================================================
+2026-05-05 00:18:29,559 [INFO] redscanner: PHASE: Nuclei
+2026-05-05 00:18:29,559 [INFO] redscanner: ============================================================
+2026-05-05 00:18:29,560 [INFO] redscanner: Nuclei template exclude tags: dos
+2026-05-05 00:18:29,560 [INFO] redscanner.runner: Running: nuclei -l /tmp/tmpj2b9feec.txt -json -silent -severity critical,high,medium,low -rate-limit 50 -c 10 -etags dos
+2026-05-05 00:18:29,905 [INFO] redscanner: Nuclei reported 0 findings
+2026-05-05 00:18:29,906 [INFO] redscanner: ============================================================
+2026-05-05 00:18:29,906 [INFO] redscanner: PHASE: XSS (dalfox)
+2026-05-05 00:18:29,906 [INFO] redscanner: ============================================================
+2026-05-05 00:18:29,929 [INFO] redscanner: XSS scanner: feeding 7 parameterized URLs to dalfox pipe mode
+2026-05-05 00:18:29,930 [INFO] redscanner.runner: Running: dalfox file /tmp/tmprm5u8jsu.txt --format json --silence --timeout 30 --worker 10
+2026-05-05 00:18:30,150 [INFO] redscanner.runner: Running: dalfox url http://sec-test.skycloud.tw --format json --silence --timeout 30 --worker 10
+2026-05-05 00:18:40,825 [INFO] redscanner: Dalfox reported 0 findings
+2026-05-05 00:18:40,826 [INFO] redscanner: ============================================================
+2026-05-05 00:18:40,826 [INFO] redscanner: PHASE: SQLi (sqlmap)
+2026-05-05 00:18:40,826 [INFO] redscanner: ============================================================
+2026-05-05 00:18:40,827 [INFO] redscanner.runner: Running: sqlmap -u http://sec-test.skycloud.tw --batch --smart --level 2 --risk 1 --output-dir output/sec-test.skycloud.tw/20260505_001517/sqlmap --forms --crawl=2
+2026-05-05 00:19:06,737 [INFO] redscanner: SQLmap reported 10 findings
+2026-05-05 00:19:06,737 [INFO] redscanner: ============================================================
+2026-05-05 00:19:06,738 [INFO] redscanner: PHASE: API / secret patterns in JS
+2026-05-05 00:19:06,738 [INFO] redscanner: ============================================================
+2026-05-05 00:19:06,738 [INFO] redscanner.runner: Running: xcrawl3r -u http://sec-test.skycloud.tw
+2026-05-05 00:19:07,909 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://code.jquery.com/jquery-3.6.0.js
+2026-05-05 00:19:08,129 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/jquery.cookie.js
+2026-05-05 00:19:08,242 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/bootstrap4.6/bootstrap.bundle.min.js
+2026-05-05 00:19:08,477 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/swiper/swiper-bundle.js
+2026-05-05 00:19:08,917 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 http://sec-test.skycloud.tw/front/js/sweetalert2/sweetalert2.min.js
+2026-05-05 00:19:09,146 [INFO] redscanner: API leak scan reported 0 findings
+2026-05-05 00:19:09,146 [INFO] redscanner: ============================================================
+2026-05-05 00:19:09,146 [INFO] redscanner: PHASE: HTTP Security Headers
+2026-05-05 00:19:09,146 [INFO] redscanner: ============================================================
+2026-05-05 00:19:09,146 [INFO] redscanner.runner: Running: curl -s -I -L --max-time 10 -A Mozilla/5.0 http://sec-test.skycloud.tw
+2026-05-05 00:19:09,313 [INFO] redscanner: Header scanner reported 9 findings
+2026-05-05 00:19:09,313 [INFO] redscanner: ============================================================
+2026-05-05 00:19:09,313 [INFO] redscanner: PHASE: Nikto
+2026-05-05 00:19:09,313 [INFO] redscanner: ============================================================
+2026-05-05 00:19:09,315 [INFO] redscanner.runner: Running: nikto -h http://sec-test.skycloud.tw -maxtime 120s -useragent Mozilla/5.0
+2026-05-05 00:19:09,448 [INFO] redscanner: nikto pass complete (1 hosts), parsed 0 lines
+2026-05-05 00:19:09,448 [INFO] redscanner: Nikto parsed 0 notable lines
+2026-05-05 00:19:09,453 [INFO] redscanner: ============================================================
+2026-05-05 00:19:09,453 [INFO] redscanner: Generating Reports
+2026-05-05 00:19:09,453 [INFO] redscanner: ============================================================
+2026-05-05 00:19:09,455 [INFO] redscanner.report: JSON report: output/sec-test.skycloud.tw/20260505_001517/report.json
+2026-05-05 00:19:09,457 [INFO] redscanner.report: Surface JSON: output/sec-test.skycloud.tw/20260505_001517/surface.json
+2026-05-05 00:19:09,466 [INFO] redscanner.report: Markdown report: output/sec-test.skycloud.tw/20260505_001517/report.md
+2026-05-05 00:19:09,476 [INFO] redscanner.report: HTML report: output/sec-test.skycloud.tw/20260505_001517/report.html
+2026-05-05 00:19:09,476 [INFO] redscanner.report: Reports written to output/sec-test.skycloud.tw/20260505_001517
+2026-05-05 00:19:09,477 [INFO] redscanner: 
+2026-05-05 00:19:09,477 [INFO] redscanner: ============================================================
+2026-05-05 00:19:09,477 [INFO] redscanner: SCAN COMPLETE — 20260505_001517
+2026-05-05 00:19:09,477 [INFO] redscanner: Target: sec-test.skycloud.tw
+2026-05-05 00:19:09,477 [INFO] redscanner: Duration: 231.9s
+2026-05-05 00:19:09,477 [INFO] redscanner: Assets discovered: 1
+2026-05-05 00:19:09,477 [INFO] redscanner: Total findings: 19
+2026-05-05 00:19:09,477 [INFO] redscanner:   Critical: 7  High: 0  Medium: 2  Low: 4  Info: 6
+2026-05-05 00:19:09,477 [INFO] redscanner: Reports saved to: output/sec-test.skycloud.tw/20260505_001517
+2026-05-05 00:19:09,477 [INFO] redscanner: ============================================================

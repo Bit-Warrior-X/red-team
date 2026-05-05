@@ -101,6 +101,7 @@ class ReportGenerator:
         data = {
             "scan_id": results.scan_id,
             "target": results.target,
+            "strict_domain_reports": self.config.strict_domain_reports,
             "plan_title": self.config.plan_title,
             "plan_description": self.config.plan_description,
             "started_at": results.started_at.isoformat(),
@@ -167,6 +168,13 @@ class ReportGenerator:
             f"**Modules:** {', '.join(results.modules_run)}",
             f"**HTTP assets (httpx):** {len(results.assets_discovered)}",
             f"",
+        ]
+        if self.config.strict_domain_reports:
+            lines += [
+                "**Domain scope:** The vulnerabilities section only includes findings whose URL host matches the target or its subdomains.",
+                "",
+            ]
+        lines += [
             f"## Summary",
             f"",
             f"| Severity | Count |",
@@ -426,6 +434,13 @@ class ReportGenerator:
 </div>
 """
 
+        strict_note = ""
+        if self.config.strict_domain_reports:
+            strict_note = (
+                "<p class=\"meta\"><strong>Domain scope:</strong> "
+                "The vulnerabilities table only includes findings whose URL host matches the target or its subdomains.</p>"
+            )
+
         html_page = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>RedScanner Report - {html.escape(results.target)}</title>
 <style>
@@ -445,6 +460,7 @@ a:hover {{ color: #7dd3fc !important; }}
 <h1>RedScanner Report</h1>
 <p class="meta"><strong>Target:</strong> {html.escape(results.target)} &nbsp; <strong>Scan ID:</strong> {html.escape(results.scan_id)} &nbsp; <strong>Date:</strong> {results.started_at.strftime('%Y-%m-%d %H:%M')} &nbsp; <strong>Duration:</strong> {html.escape(duration)}</p>
 <p class="meta"><strong>Modules:</strong> {html.escape(', '.join(results.modules_run))} &nbsp; <strong>HTTP assets:</strong> {len(results.assets_discovered)} &nbsp; <strong>Findings:</strong> {len(vulns)}</p>
+{strict_note}
 {plan_ctx_html}
 {manual_html}
 <div class="cards">{summary_cards}</div>

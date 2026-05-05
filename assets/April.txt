@@ -1,0 +1,78 @@
+http://sec-test.skycloud.tw
+sec-test.skycloud.tw
+
+April — vulnerability discovery for a given domain (RedScanner beta)
+
+Goals:
+- Run repeatable scans against one authorized hostname (and its subdomains from recon).
+- Prioritize confirmed vuln classes: nuclei templates, dalfox (XSS), sqlmap (SQLi), api_leak (JS secrets), plus nikto/naabu where useful.
+- Add HTTP security header checking to cover OWASP WSTG-CONF gaps.
+- Improve XSS testing surface by feeding parameterized crawled URLs to dalfox.
+- Provide nuclei template tag control without editing Python code.
+- Build a scan diff tool for regression tracking between runs.
+
+Red plan features (assets/red_plan.json):
+- Profile **april-vuln** — recon, wayback, nuclei, xss, sqli, api_leak, header_check (vuln-focused: **lite** plus **wayback** and **header_check**; no naabu/nikto).
+- Profile **full** — same vuln stack as april-vuln plus **naabu** and **nikto**.
+- Profile **header-only** — recon + header_check for quick security header audits.
+- **strict_domain_reports** — when true (or use CLI `--strict-domain`), findings in reports exclude URLs whose host is not the target or a subdomain of it.
+- **nuclei_extra_args** — optional list of extra nuclei flags (e.g. `"-as"` for active scan); only add after reading nuclei docs and scoping rate limits.
+- **nuclei_tags** — list of template tags to include (e.g. `["cve","oast","tech"]` → `nuclei -tags cve,oast,tech`).
+- **nuclei_exclude_tags** — list of template tags to exclude (e.g. `["dos","fuzz"]` → `nuclei -etags dos,fuzz`). Default: `["dos"]` to avoid disruption.
+- **header_check_enabled** — bool (default true); set to false or use `--no-header-check` CLI to skip the header scanner.
+
+CLI reminders:
+- `python main.py --profile april-vuln`
+- `python main.py --profile full --strict-domain`
+- `python main.py --profile header-only`
+- `python main.py --no-header-check --profile lite`
+- `python main.py --list-profiles`
+
+New modules and tools:
+
+1. HTTP Security Header Scanner (modules/header_scanner.py)
+   - Checks response headers via curl HEAD request against OWASP baselines.
+   - Missing security headers (7): HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection.
+   - Information disclosure (3): Server, X-Powered-By, X-AspNet-Version — flagged when present.
+   - Cookie flags: detects missing Secure, HttpOnly, SameSite on Set-Cookie headers.
+   - Maps to OWASP WSTG-CONF-07 and WSTG-CONF-05.
+   - No external tool needed beyond curl.
+
+2. Enhanced XSS Scanner (modules/xss_scanner.py)
+   - Now supports dalfox **file mode**: receives parameterized crawled URLs (URLs with query strings) from the orchestrator via _extract_parameterized_urls().
+   - main.py passes self._crawled_urls to XSSScanner.run(), enabling bulk XSS testing against real application parameters.
+   - Still runs single-URL mode per target for form-based XSS (backward compatible).
+
+3. Nuclei Template Tag Control (modules/vuln_scanner.py)
+   - nuclei_tags → -tags flag; nuclei_exclude_tags → -etags flag.
+   - Applied before nuclei_extra_args in command construction.
+   - Logged when active for audit trail.
+
+4. Scan Diff Tool (scan_diff.py)
+   - Standalone CLI: `python scan_diff.py old.json new.json [--output diff.json]`
+   - Compares findings by stable key (url, vuln_type, parameter, evidence, tool).
+   - Reports: new findings, resolved findings, unchanged count.
+   - Surface comparison: domain additions/removals, port changes, crawled/historical URL counts.
+   - Human-readable text + optional JSON output.
+
+Output:
+- report.json / surface.json / HTML still list full attack surface; strict filter applies to **vulnerability list** stored and reported after the scan.
+- Header scanner findings appear alongside other vulnerability types in all report formats.
+
+OWASP WSTG coverage:
+  WSTG-INPV-05 (SQL Injection):    COVERED — sqlmap
+  WSTG-INPV-01 (Reflected XSS):    IMPROVED — dalfox file mode on parameterized crawled URLs
+  WSTG-CONF-07 (HSTS):             NEW — header_scanner
+  WSTG-CONF-05 (Info Disclosure):   NEW — header_scanner (Server, X-Powered-By detection)
+  WSTG-INFO-* (Information):        COVERED — recon + api_leak
+  WSTG-ATHN/ATHZ (Auth):            MANUAL — listed in manual_phases
+
+Module execution order:
+  recon → wayback → naabu → nuclei → xss → sqli → api_leak → header_check → nikto
+
+Next ideas (backlog for May):
+- Optional ffuf/gobuster module for content discovery.
+- SARIF export from nuclei for CI/CD integration.
+- IP-target support in domain_scope.py for non-domain engagements.
+- CI smoke test script with mocked tool output.
+- sqlmap --technique and --dbms hints in red_plan.json for known-stack targets.
