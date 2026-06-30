@@ -1,0 +1,141 @@
+Engagement work log — May (12 days: Days 1–6 RedScanner v0.2, Days 7–12 OpenResty CDN upgrade).
+
+Day 1:
+RedScanner v0.2 — scope and release baseline
+Defined May deliverables for the lab target: HTTP security header auditing, broader XSS via dalfox file mode, nuclei template tag filtering from JSON, and scan-to-scan diff for regression. Bumped orchestrator to v0.2 and updated engagement plan profiles to include header_check on full, lite, red-team, and april-vuln.
+
+Results:
+- main.py: __version__ = "0.2", version logged at scan start.
+- assets/red_plan.json: v0.2 description and module list updates.
+
+Analysis:
+- Extends April vuln-discovery profiles with operational tooling (headers, tuning, diff).
+
+
+Day 2:
+RedScanner v0.2 — HTTP security header scanner
+Implemented modules/header_scanner.py using curl HEAD (-I). Missing-header checks: HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection. Disclosure checks: Server, X-Powered-By, X-AspNet-Version. Set-Cookie checks: Secure, HttpOnly, SameSite. Mapped to OWASP WSTG-CONF-07 and WSTG-CONF-05.
+
+Results:
+- HeaderScanner with _fetch_headers() and _check_cookies(); findings in standard vulnerability tables (tool header_scanner).
+- No extra install beyond curl.
+
+Analysis:
+- Fills configuration gaps when nuclei/nikto return few hardening items on the lab host.
+
+
+Day 3:
+RedScanner v0.2 — header_check integration and header-only profile
+Wired header_check into MODULE_ORDER (after api_leak, before nikto). Added header_check_enabled and --no-header-check. Profile header-only = recon + header_check for quick audits without vuln scanning.
+
+Results:
+- main.py: header_check phase; skips when disabled.
+- python main.py --profile header-only
+
+Analysis:
+- Short header pass before full or april-vuln runs.
+
+
+Day 4:
+RedScanner v0.2 — enhanced XSS scanner (dalfox file mode)
+Updated modules/xss_scanner.py: _extract_parameterized_urls() from crawled URLs; _run_file_mode() runs dalfox file on temp URL list; single-url mode kept per target. main.py passes crawled URLs into XSSScanner.run().
+
+Results:
+- Bulk XSS testing on query-string URLs from xcrawl3r when crawl output exists.
+
+Analysis:
+- More surface than base-URL-only testing; triage false positives in reports.
+
+
+Day 5:
+RedScanner v0.2 — nuclei tag control and scan diff
+Added nuclei_tags and nuclei_exclude_tags to plan and VulnScanner (-tags / -etags before nuclei_extra_args). Default exclude dos,fuzz when list empty. Built scan_diff.py for new/resolved/unchanged findings and surface deltas (domains, ports, crawled/historical URL counts).
+
+Results:
+- nuclei_tags example: ["cve","oast","tech"]; nuclei_exclude_tags: ["dos","fuzz"].
+- python scan_diff.py <old>/report.json <new>/report.json [--output diff.json]
+- report.json includes redscanner_version 0.2.
+
+Analysis:
+- Safer nuclei runs and repeatable regression compares on the same target.
+
+
+Day 6:
+RedScanner v0.2 — reports, lab validation, regression workflow
+Removed Manual follow-up sections from report.html and report.md (monthly phase checklists no longer in customer HTML). Ran full pipeline on sec-test.skycloud.tw; compared two report.json outputs with scan_diff (module list, sqlmap noise, header coverage when crawl empty).
+
+Results:
+- modules/report_generator.py: HTML/MD without manual_phases blocks.
+- output/sec-test.skycloud.tw/<timestamp>/ artifacts validated end-to-end.
+
+Analysis:
+- Deliverables focus on findings and surface; diff supports weekly review.
+
+
+Day 7:
+OpenResty CDN upgrade — planning with Allen
+Discussed upgrading CDN nodes from OpenResty/nginx 1.27.3 to 1.29.2.3 with Allen. Defined roadmap: Phase 1 PoC, Phase 2 Staging validation, Phase 3 CDNRay deployment, Phase 4 Production rollout. Listed risks: custom Lua, lua-resty-* libs, nginx/TLS/certificate behavior.
+
+Results:
+- Four-phase roadmap agreed before staging work on SKC-YC.
+
+Analysis:
+- PoC must pass before traffic moves to 1.29.2.3 builds.
+
+
+Day 8:
+OpenResty CDN upgrade — Phase 1 PoC environment
+Set up isolated OpenResty 1.29.2.3 instance with CDNRay full configuration. Ran complete Lua test suite and integration tests. Audited custom Lua modules and third-party lua-resty-* libraries for compatibility.
+
+Results:
+- PoC instance runs CDNRay-style config; Lua suite and integration tests executed.
+
+Analysis:
+- Confirms runtime and script compatibility before custom module matrix testing.
+
+
+Day 9:
+OpenResty CDN upgrade — Phase 1 build (Jeff module set)
+Built standalone OpenResty 1.29.2.3 with slice, ACL, WAF (naxsi), luavar, and req status per Jeff’s request. Verified nginx config and TLS configuration, certificate handling.
+
+Results:
+- ./configure --add-module=./nginx-slice-module/ --with-http_slice_module --add-module=./ngx_acl/ --add-module=./nginx_waf/naxsi_src/ --add-module=./nginx_luavar/ --add-module=./ngx_req_status/ --with-cc-opt='-std=gnu99' --without-pcre2
+- Build completed with expected modules linked.
+
+Analysis:
+- Module set matches production CDN feature needs for the upgrade path.
+
+
+Day 10:
+OpenResty CDN upgrade — Phase 1 configuration testing
+Tested all modules across multiple nginx.conf variants in the PoC environment. Validated slice, ACL, WAF, luavar, and req status behavior under different upstream/cache/TLS layouts.
+
+Results:
+- Various nginx configurations exercised; all modules behaved as expected in PoC.
+
+Analysis:
+- Phase 1 PoC sign-off; ready for SKC-YC staging node compiled from 1.29.2.3.
+
+
+Day 11:
+OpenResty CDN upgrade — SKC-YC staging node analysis and functional tests
+SKC-YC provided CDN node built from OpenResty 1.29.2.3. Analyzed current node layout and configuration. Wrote 01_functional.sh and run_all.sh skeleton; ran functional and integration testing on the staging node.
+
+Results:
+- 01_functional.sh and run_all.sh in test suite.
+- Functional/integration pass documented for staging.
+
+Analysis:
+- Baseline behavior on real CDN config before load and rollback drills.
+
+
+Day 12:
+OpenResty CDN upgrade — performance and rollback validation
+Completed 02_performance.sh and 03_rollback.sh. Ran traffic and performance validation and rollback testing via run_all.sh on the SKC-YC 1.29.2.3 node. Output feeds Phase 2 staging validation before CDNRay deployment and production rollout.
+
+Results:
+- Script suite: 01_functional.sh, 02_performance.sh, 03_rollback.sh, run_all.sh.
+- Performance and rollback criteria recorded for Phase 2 checklist.
+
+Analysis:
+- Phase 4 production rollout remains gated on staging sign-off and proven rollback path.

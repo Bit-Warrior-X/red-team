@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
-RedScanner — web vulnerability discovery orchestrator with a research-driven red-team plan.
+RedScanner v0.2 — web vulnerability discovery orchestrator with a research-driven red-team plan.
 
 Usage:
     python main.py --profile full
-    python main.py --profile lite
+    python main.py --profile header-only
     python main.py --list-profiles
+    python scan_diff.py output/<target>/<old>/report.json output/<target>/<new>/report.json
 """
 
 from __future__ import annotations
+
+__version__ = "0.2"
 
 import argparse
 import asyncio
@@ -18,6 +21,7 @@ import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 from modules.api_leak_scanner import APILeakScanner
 from modules.header_scanner import HeaderScanner
@@ -140,7 +144,7 @@ class RedScanner:
         self._crawled_urls: list[str] = []
 
     async def run(self):
-        log.info("Starting scan %s against %s", self.scan_id, self.config.target)
+        log.info("RedScanner v%s — scan %s against %s", __version__, self.scan_id, self.config.target)
         if self.config.plan_title:
             log.info("Engagement plan: %s", self.config.plan_title)
         if self.config.methodology_frameworks:
@@ -263,11 +267,10 @@ class RedScanner:
 
         if name == "header_check":
             log.info("=" * 60)
-            log.info("PHASE: HTTP Security Headers")
+            log.info("PHASE: HTTP Security Headers (curl HEAD)")
             log.info("=" * 60)
             if not self.config.header_check_enabled:
-                log.info("Header check disabled in configuration — skipping")
-                self.results.modules_run.append("header_check")
+                log.info("Header check disabled — skipping")
                 return
             targets = self._get_nikto_targets()  # same base-URL set as nikto
             vulns = await HeaderScanner(self.config).run(targets)
@@ -370,12 +373,42 @@ class RedScanner:
         log.info("=" * 60)
 
 
+def _host_from_url(url: str) -> str:
+    try:
+        return (urlparse(url).hostname or "").lower()
+    except Exception:
+        return ""
+
+
+def _resolve_base_url(
+    target: str,
+    plan_base_url: str | None,
+    cli_base_url: str | None,
+) -> str | None:
+    """Use plan base_url only when its host matches target; CLI --base-url wins."""
+    if cli_base_url:
+        return cli_base_url.rstrip("/")
+    if plan_base_url and _host_from_url(plan_base_url) == target.lower():
+        return plan_base_url.rstrip("/")
+    if plan_base_url:
+        log.warning(
+            "Ignoring plan base_url %s (host does not match target %s)",
+            plan_base_url,
+            target,
+        )
+    return None
+
+
 def parse_args():
     root = Path(__file__).resolve().parent
     default_plan = root / "assets" / "red_plan.json"
 
     p = argparse.ArgumentParser(description="RedScanner — red-team plan driven web assessment")
     p.add_argument("--target", "-t", help="Target domain (default: domain in red plan JSON)")
+    p.add_argument(
+        "--base-url",
+        help="Override scan base URL (default: plan base_url when host matches -t, else http://<target>)",
+    )
     p.add_argument(
         "--plan-file",
         type=Path,
@@ -435,7 +468,9 @@ def main():
             sys.exit(1)
 
     bu = plan.get("base_url")
-    base_url = bu.strip() if isinstance(bu, str) and bu.strip() else None
+    plan_base_url = bu.strip() if isinstance(bu, str) and bu.strip() else None
+    cli_base_url = args.base_url.strip() if isinstance(args.base_url, str) and args.base_url.strip() else None
+    base_url = _resolve_base_url(target, plan_base_url, cli_base_url)
 
     manual = plan.get("manual_phases")
     if not isinstance(manual, list):
@@ -477,15 +512,19 @@ def main():
     raw_etags = plan.get("nuclei_exclude_tags")
     if isinstance(raw_etags, list):
         nuclei_exclude_tags = [str(x).strip() for x in raw_etags if str(x).strip()]
+    if not nuclei_exclude_tags:
+        nuclei_exclude_tags = ["dos", "fuzz"]
+        log.info("Nuclei exclude tags (v0.2 default): %s", ",".join(nuclei_exclude_tags))
 
-    # Header check control
     header_check_enabled = not args.no_header_check
-    if not header_check_enabled:
+    if args.no_header_check:
         log.info("Header check disabled via --no-header-check")
-    elif _truthy(plan.get("header_check_enabled")) is False and plan.get("header_check_enabled") is not None:
-        # Only disable if explicitly set to false in JSON
-        if plan.get("header_check_enabled") is False:
-            header_check_enabled = False
+    elif plan.get("header_check_enabled") is False or (
+        isinstance(plan.get("header_check_enabled"), str)
+        and not _truthy(plan.get("header_check_enabled"))
+    ):
+        header_check_enabled = False
+        log.info("Header check disabled via header_check_enabled in plan")
 
     config = ScanConfig(
         target=target,

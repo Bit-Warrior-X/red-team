@@ -2,9 +2,9 @@
 # modules/xss_scanner.py - Dalfox Integration (enhanced)
 # ============================================================
 #
-# Improvements over original:
-# - Supports dalfox "pipe" mode: feeds parameterized crawled URLs
-#   to dalfox via stdin for broader XSS surface coverage.
+# Improvements (RedScanner v0.2 / May):
+# - Supports dalfox file mode: feeds parameterized crawled URLs
+#   from xcrawl3r for broader XSS surface coverage.
 # - Falls back to single "url" mode per target when no crawled
 #   URLs with query parameters are available.
 # - Configurable via max_deep_scan_urls to cap URL count.
@@ -38,8 +38,8 @@ class XSSScanner:
         param_urls = self._extract_parameterized_urls(crawled_urls or [])
 
         if param_urls:
-            log.info("XSS scanner: feeding %s parameterized URLs to dalfox pipe mode", len(param_urls))
-            pipe_vulns = await self._run_pipe_mode(param_urls)
+            log.info("XSS scanner: feeding %s parameterized URLs to dalfox file mode", len(param_urls))
+            pipe_vulns = await self._run_file_mode(param_urls)
             vulns.extend(pipe_vulns)
 
         # Also run single-URL mode on each base target (may find form-based XSS)
@@ -58,10 +58,10 @@ class XSSScanner:
 
         return vulns
 
-    async def _run_pipe_mode(self, urls: list[str]) -> list[Vulnerability]:
-        """Feed parameterized URLs to dalfox via pipe mode for bulk XSS testing."""
+    async def _run_file_mode(self, urls: list[str]) -> list[Vulnerability]:
+        """Feed parameterized URLs to dalfox file mode for bulk XSS testing."""
         if not shutil.which(self.config.dalfox_path):
-            log.warning("dalfox not on PATH — skipping pipe mode")
+            log.warning("dalfox not on PATH — skipping file mode")
             return []
 
         # Write URLs to a temp file for dalfox file mode

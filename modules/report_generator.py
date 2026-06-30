@@ -99,6 +99,7 @@ class ReportGenerator:
     def _generate_json(self, results: ScanResult, vulns: list[Vulnerability]):
         surface = self._surface_payload(results, vulns)
         data = {
+            "redscanner_version": "0.2",
             "scan_id": results.scan_id,
             "target": results.target,
             "strict_domain_reports": self.config.strict_domain_reports,
@@ -252,17 +253,6 @@ class ReportGenerator:
                 lines.append(f"| `{p['name']}` | {p['occurrences']} | {ex} | {tools} |")
             lines.append(_cap_note(len(params), min(len(params), LIST_CAP)))
 
-        if self.config.manual_phases:
-            lines += ["", "## Manual follow-up (not automated)", ""]
-            for block in self.config.manual_phases:
-                name = block.get("name", "Phase")
-                lines.append(f"### {name}")
-                lines.append("")
-                tasks = block.get("tasks", [])
-                if isinstance(tasks, list):
-                    for t in tasks:
-                        lines.append(f"- {t}")
-                lines.append("")
         if self.config.research_references:
             lines += ["## Tool / reference links", ""]
             for ref in self.config.research_references[:40]:
@@ -330,21 +320,6 @@ class ReportGenerator:
                 parts.append("</ul>")
             parts.append("</div>")
             plan_ctx_html = "".join(parts)
-
-        manual_html = ""
-        if self.config.manual_phases:
-            parts = [
-                "<div style='margin:20px 0;padding:16px;background:#1e293b;border-radius:8px;font-size:13px'>"
-                "<strong>Manual follow-up</strong>"
-            ]
-            for block in self.config.manual_phases:
-                n = block.get("name", "Phase")
-                parts.append(f"<p style='margin:12px 0 4px'><strong>{html.escape(str(n))}</strong></p><ul style='margin:0'>")
-                for t in block.get("tasks", []) or []:
-                    parts.append(f"<li>{html.escape(str(t))}</li>")
-                parts.append("</ul>")
-            parts.append("</div>")
-            manual_html = "".join(parts)
 
         summary_cards = ""
         for sev in ["critical", "high", "medium", "low", "info"]:
@@ -462,7 +437,6 @@ a:hover {{ color: #7dd3fc !important; }}
 <p class="meta"><strong>Modules:</strong> {html.escape(', '.join(results.modules_run))} &nbsp; <strong>HTTP assets:</strong> {len(results.assets_discovered)} &nbsp; <strong>Findings:</strong> {len(vulns)}</p>
 {strict_note}
 {plan_ctx_html}
-{manual_html}
 <div class="cards">{summary_cards}</div>
 {surface_block}
 <h2 style="color:#f1f5f9;font-size:18px;margin:28px 0 12px">Vulnerabilities</h2>

@@ -2,9 +2,9 @@
 # modules/vuln_scanner.py - Nuclei Integration (enhanced)
 # ============================================================
 #
-# Improvements:
-# - First-class nuclei_tags / nuclei_exclude_tags support from
-#   red_plan.json (e.g. -tags cve,oast; -etags dos,fuzz)
+# RedScanner v0.2 (May):
+# - nuclei_tags / nuclei_exclude_tags from red_plan.json
+#   (e.g. -tags cve,oast,tech; -etags dos,fuzz — safe default in main.py)
 # - nuclei_extra_args still supported for arbitrary flags
 # ============================================================
 

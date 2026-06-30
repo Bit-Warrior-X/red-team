@@ -1,0 +1,14 @@
+http://sec-test.skycloud.tw
+sec-test.skycloud.tw
+
+
+
+main.py now only uses the plan’s base_url when its hostname matches the active target. If they differ, it ignores the plan URL and falls back to http://<target>.
+
+
+python main.py -t apex.api.macrocosmos.ai --base-url https://apex.api.macrocosmos.ai --profile full
+
+
+
+python main.py -t apex.api.macrocosmos.ai --profile full
+

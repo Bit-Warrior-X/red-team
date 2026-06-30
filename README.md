@@ -1,4 +1,4 @@
-# RedScanner
+# RedScanner v0.2
 
 RedScanner is a Python orchestrator that chains external security tools into a single pipeline: reconnaissance, historical URL discovery, port scanning, template-based scanning, XSS/SQLi checks, JS secret pattern matching, HTTP security header analysis, and reporting. Engagement defaults and profiles live in **`assets/red_plan.json`**.
 
@@ -105,14 +105,14 @@ Built-in profiles include:
 | `april-vuln` | Vuln-focused: same as **lite** plus **wayback** (historical URLs). No naabu/nikto. Use profile **`full`** when you want those on the same stack. |
 | `header-only` | `recon`, `header_check` — quick security header audit without vuln scanning |
 
-Additional profiles may be defined under **`profiles`** in **`assets/red_plan.json`**. See **`assets/April.txt`** for April vulnerability-discovery notes.
+Additional profiles may be defined under **`profiles`** in **`assets/red_plan.json`**. Feature summary: **`assets/May.txt`**.
 
-## New in May
+## RedScanner v0.2 (May)
 
 ### HTTP Security Header Scanner (`header_check` module)
 
 Checks response headers against OWASP recommendations:
-- **Missing security headers**: HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
+- **Missing security headers**: HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection
 - **Information disclosure headers**: Server, X-Powered-By, X-AspNet-Version
 - **Insecure cookies**: missing Secure, HttpOnly, or SameSite flags
 
@@ -126,7 +126,7 @@ The XSS module now uses **dalfox file mode** to feed parameterized crawled URLs 
 
 Configure template selection in `red_plan.json` without editing code:
 - `"nuclei_tags": ["cve", "oast", "tech"]` → include only these template categories
-- `"nuclei_exclude_tags": ["dos", "fuzz"]` → skip templates that could disrupt the target
+- `"nuclei_exclude_tags": ["dos", "fuzz"]` → skip disruptive templates (this pair is the **default** when the key is omitted or empty)
 - Works alongside `nuclei_extra_args` for full flexibility
 
 ### Scan Diff Tool

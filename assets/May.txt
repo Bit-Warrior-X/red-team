@@ -1,0 +1,56 @@
+http://sec-test.skycloud.tw
+sec-test.skycloud.tw
+
+
+RedScanner v0.2 — New Features (May)
+
+HTTP Security Header Scanner (header_check module)
+module : modules/header_scanner.py
+Added a new module that audits HTTP response security headers using curl HEAD requests.
+Checks for missing security headers: HSTS, Content-Security-Policy, X-Content-Type-Options,
+X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection.
+Checks for information disclosure headers: Server, X-Powered-By, X-AspNet-Version.
+Checks for insecure cookie flags: Secure, HttpOnly, SameSite.
+Mapped to OWASP WSTG-CONF-07 and WSTG-CONF-05.
+New profiles added: header-only (recon + header_check only), header-only quick audit without vuln scanning.
+No extra tool installation needed beyond curl.
+Usage: python main.py --profile header-only
+
+Enhanced XSS Scanner (dalfox)
+module : modules/xss_scanner.py
+Updated dalfox integration to use file mode (dalfox file <url_list>).
+Feeds parameterized crawled URLs (URLs with query strings) to dalfox in bulk.
+Dramatically increases XSS test surface when the crawler finds pages with query parameters.
+Previously only tested single-URL per target; now tests all parameterized URLs found by xcrawl3r.
+
+Nuclei Template Tag Control
+config : assets/red_plan.json
+Added nuclei_tags and nuclei_exclude_tags keys to red_plan.json for template filtering without editing code.
+nuclei_tags: ["cve","oast","tech"] → only run templates with these tags.
+nuclei_exclude_tags: ["dos","fuzz"] → skip templates that could disrupt the target.
+Works alongside existing nuclei_extra_args for full flexibility.
+Safe by default: dos and fuzz templates can now be explicitly excluded.
+
+Scan Diff Tool
+script : scan_diff.py
+New standalone utility to compare two RedScanner JSON reports.
+Shows new findings, resolved findings, unchanged findings, and surface changes (domains, ports, crawled URLs).
+Identifies regression between scan runs on the same target.
+Outputs to terminal (text) or JSON file (--output diff.json).
+Usage: python scan_diff.py output/.../old/report.json output/.../new/report.json
+
+#########################################################################################
+And discuss with Allen about the upgrading from openresty/nginx 1.27.3 to 1.29.2.3 for our CDN node.
+I made roadmap : Phase 1 : PoC, Phase 2 : Staging validation, Phase 3 : CDNRay deployment, Phase 4: Production rollout
+I completed the first step PoC : Setup isolated OpenResty 1.29.2.3 instance with CDNRay’s full configuration and run the complete Lua test suite and integration tests, also audit all custom Lua modules and third-party lua-resty-* libraries for compatibility and then verify nginx config and tls configuration, certificate handling.
+I build the standalone environment for Openresty 1.29.2.3 with modules slice, ACL, WAF, luavar and req according to Jeff's request
+./configure --add-module=./nginx-slice-module/ --with-http_slice_module --add-module=./ngx_acl/ --add-module=./nginx_waf/naxsi_src/ --add-module=./nginx_luavar/ --add-module=./ngx_req_status/ --with-cc-opt='-std=gnu99' --without-pcre2
+And test all modules with various nginx confiurations and everything works fine.
+For next step, SKC-YC made CDN node which compiled from openresty 1.29.2.3. There I tested - functional / integration testing - traffic and performance validation - rollback testing.
+I analyzed current CDN node and configuration, and made scripts to test.
+01_functional.sh
+02_performance.sh
+03_rollback.sh
+run_all.sh
+
+

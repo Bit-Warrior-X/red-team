@@ -1,12 +1,12 @@
 {
   "title": "Red team engagement plan",
-  "description": "Web assessment automation: ProjectDiscovery stack (subfinder, httpx, naabu), nuclei, dalfox, sqlmap, xcrawl3r, waybackurls/gau, nikto, JS secret patterns (api_leak), and HTTP security header analysis (header_check). April focus: vulnerability discovery for the configured domain — use profile april-vuln (lite + wayback + header_check, no naabu/nikto) or full for all modules; optional strict_domain_reports, nuclei_extra_args, nuclei_tags, and nuclei_exclude_tags.",
+  "description": "RedScanner v0.2 — web assessment automation: ProjectDiscovery stack, nuclei (tag filtering), dalfox XSS on crawled parameterized URLs, sqlmap, api_leak, header_check (OWASP WSTG-CONF), nikto/naabu. Use profile header-only for a quick header audit; april-vuln or full for vuln discovery; compare runs with scan_diff.py. Optional: strict_domain_reports, nuclei_extra_args, nuclei_tags, nuclei_exclude_tags.",
   "domain": "sec-test.skycloud.tw",
   "base_url": "http://sec-test.skycloud.tw",
   "strict_domain_reports": false,
   "nuclei_extra_args": [],
   "nuclei_tags": [],
-  "nuclei_exclude_tags": ["dos"],
+  "nuclei_exclude_tags": ["dos", "fuzz"],
   "header_check_enabled": true,
   "methodology_frameworks": [
     "MITRE ATT&CK (Enterprise + Cloud + Recon)",
@@ -27,6 +27,16 @@
     "header-only": ["recon", "header_check"]
   },
   "manual_phases": [
+    {
+      "name": "May — RedScanner v0.2 (see assets/May.txt)",
+      "tasks": [
+        "Quick header audit: python main.py --profile header-only",
+        "Vuln scan: april-vuln or full; tune nuclei_tags / nuclei_exclude_tags (default excludes dos,fuzz)",
+        "Regression: python scan_diff.py output/<target>/<old>/report.json output/<target>/<new>/report.json --output diff.json",
+        "Confirm dalfox file-mode XSS against parameterized URLs from xcrawl3r crawl output",
+        "Triangulate automated findings manually before customer delivery"
+      ]
+    },
     {
       "name": "April — vulnerability discovery for the scoped domain",
       "tasks": [
