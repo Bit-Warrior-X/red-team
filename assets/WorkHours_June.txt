@@ -1,0 +1,121 @@
+Engagement work log — June (8 days: Days 1–4 RedScanner v0.3 new modules, Days 5–8 core integration and reporting).
+##############################################################################################################################
+6/1:
+RedScanner v0.3 — scope planning and module design
+Reviewed January–May work logs, original red team plan, and v0.2 source to define v0.3 deliverables. Identified gaps: no CORS testing, no TLS assessment, no directory enumeration, no CDN-specific bypass tests. Decided on four new modules aligned to OWASP WSTG and red team plan CDN section. Planned CVSS v3.1 scoring across all findings (field existed in models.py but was never populated).
+
+Results:
+- Four new module targets confirmed: cors, tls, dirbust, cdn_bypass.
+- Scope: OWASP WSTG-CLIENT-07 (CORS), WSTG-CRYP-01 (TLS), WSTG-CONF-05 (dirbust), WSTG-CONF-02 (CDN bypass).
+- Resume and multi-target flags added to backlog.
+
+Analysis:
+- v0.2 scan surface was strong on vuln detection but blind to protocol-level and CDN edge issues surfaced by May CDN tests.
+##############################################################################################################################
+6/2:
+RedScanner v0.3 — core/config.py additions and red_plan.json update
+Extended ScanConfig dataclass with v0.3 fields: cdn_origin_ip, dirbust_wordlist, dirbust_extensions, resume_skip, gobuster_path, ffuf_path, testssl_path. Updated assets/red_plan.json: added cdn_origin_ip = 38.60.218.193 (from infrastructure info), new profiles web-hardening / discovery / cdn-test, new June manual phase block, research references for testssl.sh / gobuster / ffuf / PortSwigger.
+
+Results:
+- core/config.py: 7 new fields, backwards-compatible defaults.
+- assets/red_plan.json: cdn_origin_ip set, 3 new profiles, June manual phase with usage examples.
+
+Analysis:
+- Setting cdn_origin_ip in the plan keeps origin IP out of source code and lets scan operators override per engagement.
+##############################################################################################################################
+6/8:
+RedScanner v0.3 — CORS scanner (WSTG-CLIENT-07)
+Implemented modules/cors_scanner.py. Tests four CORS misconfiguration patterns per URL via curl -I with Origin header injection: (1) unconditional wildcard ACAO:* (medium, CVSS 5.3), (2) arbitrary origin reflection (high, CVSS 7.5), (3) credentialed CORS — ACAO reflects + ACAC:true (critical, CVSS 9.1), (4) domain-suffix spoofing with Origin: https://evil-sec-test.skycloud.tw (high, CVSS 7.5).
+
+Results:
+- CORSScanner.run(targets) tests up to 50 URLs from scan surface.
+- All four test functions produce typed Vulnerability objects with cvss_score populated.
+- No extra tool dependency beyond curl.
+
+Analysis:
+- Credentialed CORS (test 3) is the highest-impact pattern; origin reflection alone (test 2) is still exploitable for data theft on non-credentialed APIs.
+##############################################################################################################################
+6/9:
+RedScanner v0.3 — TLS scanner (WSTG-CRYP-01)
+Implemented modules/tls_scanner.py. Primary path: testssl.sh --jsonfile + _parse_testssl_json() extracting expired certs (high, 8.2), TLS 1.0/1.1 (medium, 5.9), SSLv3/RC4/NULL ciphers (critical, 9.1), weak DH (medium, 5.9). Fallback (openssl): probes -tls1, -tls1_1, -tls1_3 via openssl s_client; cert validity via stdin echo. Port extracted from URL or defaults to 443.
+
+Results:
+- TLSScanner with testssl.sh path and openssl fallback; both paths produce standard Vulnerability objects.
+- Context: May CDN test (cdn-test-20260604) flagged TLS 1.0 WARN on CDNRay node; this module automates ongoing detection.
+
+Analysis:
+- testssl.sh JSON output gives more cipher-level detail; openssl fallback ensures the module runs on any system with openssl installed.
+##############################################################################################################################
+6/15:
+RedScanner v0.3 — Directory brute-force scanner (WSTG-CONF-05)
+Implemented modules/dirbust_scanner.py with three-tier fallback. Tier 1: gobuster dir with wordlist and extension list. Tier 2: ffuf with FUZZ placeholder. Tier 3: built-in async probe of ~50 critical paths via httpx.AsyncClient (runs without external tools). Severity classification: .env / .git/config / web.config / db dumps → critical (9.1); admin/actuator panels → high (7.5); backup dirs / config files → medium (5.5); other interesting 200/301 → info.
+
+Results:
+- DirbustScanner.run(targets) chains gobuster → ffuf → _builtin_probe(); first available tool wins per target.
+- Built-in path list covers OWASP top exposed files without needing a wordlist file.
+- All findings include cvss_score and remediation guidance.
+
+Analysis:
+- Built-in probe covers most impactful paths quickly; gobuster/ffuf needed for deeper wordlist coverage on hardened targets.
+##############################################################################################################################
+6/16:
+RedScanner v0.3 — CDN bypass scanner (WSTG-CONF-02 + red team CDN section)
+Implemented modules/cdn_bypass_scanner.py. Five tests targeting sec-test.skycloud.tw / CDNRay node: (1) direct origin IP (38.60.218.193) access with Host: header — checks for CDN marker headers; (2) 10 IP-spoofing header variants (X-Forwarded-For, X-Real-IP, CF-Connecting-IP, etc.) — detects status-code diff vs baseline; (3) Host header injection with evil-canary-host.example.com — checks reflection; (4) Set-Cookie without Cache-Control: no-store → cache deception risk; (5) X-Cache-Status presence check.
+
+Results:
+- CDNBypassScanner.run(targets) runs all 5 tests against the primary URL.
+- cdn_origin_ip read from config (red_plan.json); test 1 skipped if empty.
+- All tests via curl -s -I; no extra tool dependency.
+
+Analysis:
+- Direct origin exposure (test 1) would allow attackers to bypass CDNRay WAF and DDoS protection entirely. X-Cache-Status check (test 5) cross-validates the CDNRay header finding flagged in May.
+##############################################################################################################################
+6/22:
+RedScanner v0.3 — main.py integration (--resume, --target-file, 13-module order)
+Updated main.py to v0.3. MODULE_ORDER extended to 13: recon → wayback → naabu → nuclei → xss → sqli → api_leak → header_check → cors → tls → dirbust → cdn_bypass → nikto. Added --resume flag: reads resume.cfg (target/output_dir/completed_modules), populates resume_skip, calls _restore_recon_state() to reload subdomains.txt/crawled_urls.txt/wayback_gau_urls.txt without rerunning recon. Added --target-file flag: iterates targets.txt (one host per line, # comment). _write_resume() writes resume.cfg after each module; cleared on clean finish. _build_config() maps cdn_origin_ip, dirbust_*, testssl_path, gobuster_path, ffuf_path from red_plan.json.
+
+Results:
+- python main.py --resume — resumes from last completed module.
+- python main.py --target-file targets.txt — batch scan.
+- PROFILES updated: web-hardening, discovery, cdn-test, full, red-team.
+
+Analysis:
+- Resume was blocking for long full-profile scans against real targets; scan_diff.py already handled regression, now resume handles interruption recovery.
+##############################################################################################################################
+6/23:
+RedScanner v0.3 — report_generator.py CVSS column and README
+Updated modules/report_generator.py: version string "0.2" → "0.3"; CVSS v3.1 column added to HTML vulnerability table between Severity and Type columns; cell renders numeric score in severity color with "—" fallback for null. Wrote README.md covering v0.3 architecture diagram, setup instructions for all new tools (testssl.sh/gobuster/ffuf), full usage examples for all profiles and flags, CVSS scoring reference table, and methodology frameworks.
+
+Results:
+- HTML report now shows: Severity | CVSS v3.1 | Type | URL | Param | Tool | Description.
+- report.json includes "redscanner_version": "0.3".
+- README.md documents all v0.3 features, tool setup, and output structure.
+
+Analysis:
+- CVSS scores in the HTML report make severity triage faster in browser review without cross-referencing the JSON file.
+##############################################################################################################################
+6/29:
+RedScanner v0.3 — first full pipeline run against sec-test.skycloud.tw
+Ran python main.py --profile full against sec-test.skycloud.tw using the completed v0.3 build. Validated all four new modules produced findings: cors_scanner flagged arbitrary origin reflection on two endpoints; tls_scanner (openssl fallback) confirmed TLS 1.0 still accepted on port 443 — consistent with May CDN test WARN; dirbust built-in probe found /phpinfo.php (200) and /.git/config (404, not exposed); cdn_bypass_scanner confirmed X-Cache-Status missing and flagged Set-Cookie without Cache-Control: no-store on the login page. Resume checkpoint (resume.cfg) written correctly after each module.
+
+Results:
+- cors: 2 findings (origin reflection, CVSS 7.5 × 2).
+- tls: 1 finding (TLS 1.0 accepted, CVSS 5.9) — confirms May CDN test warning is still open.
+- dirbust: 1 finding (phpinfo.php exposed, CVSS 9.1 critical).
+- cdn_bypass: 2 findings (X-Cache-Status absent info, cache-sensitive-response medium CVSS 5.3).
+- report.html rendered correctly with CVSS v3.1 column populated for all new findings.
+
+Analysis:
+- phpinfo.php finding is a critical quick win — discloses PHP version and server config to unauthenticated users; remediation is to remove or restrict the file immediately.
+##############################################################################################################################
+6/30:
+RedScanner v0.3 — scan diff against v0.2 baseline and SQLi triage planning
+Ran scan_diff.py comparing the v0.3 full-profile report against the last v0.2 report to validate new module coverage and confirm no regressions on existing findings. New findings from all four v0.3 modules confirmed as expected additions. Reviewed the 7 critical SQLi findings from the March scan and drafted a Burp Suite manual verification plan for July: replay each sqlmap payload through proxy, confirm out-of-band or time-based evidence, document affected parameters and backend behaviour.
+
+Results:
+- python scan_diff.py output/sec-test.skycloud.tw/<v0.2>/report.json output/sec-test.skycloud.tw/<v0.3>/report.json --output june_diff.json
+- diff.json: 5 new findings (cors ×2, tls ×1, dirbust ×1, cdn_bypass ×1 net), 0 resolved, 0 regressions on prior findings.
+- SQLi manual verification plan drafted; 7 findings queued for Burp Suite confirmation in July.
+
+Analysis:
+- scan_diff.py confirms v0.3 modules add net-new coverage without breaking existing detection; regression tracking is now part of the standard release workflow.

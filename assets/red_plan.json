@@ -1,8 +1,9 @@
 {
   "title": "Red team engagement plan",
-  "description": "RedScanner v0.2 — web assessment automation: ProjectDiscovery stack, nuclei (tag filtering), dalfox XSS on crawled parameterized URLs, sqlmap, api_leak, header_check (OWASP WSTG-CONF), nikto/naabu. Use profile header-only for a quick header audit; april-vuln or full for vuln discovery; compare runs with scan_diff.py. Optional: strict_domain_reports, nuclei_extra_args, nuclei_tags, nuclei_exclude_tags.",
-  "domain": "sec-test.skycloud.tw",
-  "base_url": "http://sec-test.skycloud.tw",
+  "description": "RedScanner v0.3 — CORS (WSTG-CLIENT-07), TLS (WSTG-CRYP-01), directory brute-force (WSTG-CONF-05), CDN bypass, HTTP header audit (WSTG-CONF-07), XSS/SQLi/nuclei/nikto/naabu. Resume: python main.py --resume. Multi-target: --target-file targets.txt. New profiles: web-hardening, discovery, cdn-test.",
+  "domain": "freetodolist.com",
+  "base_url": "https://freetodolist.com/",
+  "cdn_origin_ip": "38.60.218.193",
   "strict_domain_reports": false,
   "nuclei_extra_args": [],
   "nuclei_tags": [],
@@ -15,9 +16,12 @@
     "NIST SP 800-115 — Technical Guide for Security Testing"
   ],
   "profiles": {
-    "full": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "nikto"],
+    "full": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "cors", "tls", "dirbust", "cdn_bypass", "nikto"],
     "lite": ["recon", "nuclei", "xss", "sqli", "api_leak", "header_check"],
-    "red-team": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "nikto"],
+    "red-team": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "cors", "tls", "dirbust", "cdn_bypass", "nikto"],
+    "web-hardening": ["recon", "header_check", "cors", "tls"],
+    "discovery": ["recon", "naabu", "dirbust"],
+    "cdn-test": ["recon", "cors", "tls", "cdn_bypass", "header_check"],
     "attack-surface": ["recon", "wayback", "naabu", "nuclei"],
     "recon-only": ["recon"],
     "vuln-only": ["nuclei", "xss", "sqli"],
@@ -28,30 +32,32 @@
   },
   "manual_phases": [
     {
-      "name": "May — RedScanner v0.2 (see assets/May.txt)",
+      "name": "June — RedScanner v0.3 new modules",
+      "tasks": [
+        "CORS audit: python main.py --profile web-hardening (includes cors + tls + header_check)",
+        "CDN bypass test: python main.py --profile cdn-test (requires cdn_origin_ip in red_plan.json)",
+        "Directory enum: python main.py --profile discovery (recon + naabu + dirbust; install gobuster for full wordlist scan)",
+        "TLS assessment: add testssl.sh to PATH for comprehensive cipher/cert checks; openssl fallback runs automatically",
+        "Resume interrupted scan: python main.py --resume (reads resume.cfg written after each completed module)",
+        "Multi-target scan: python main.py --target-file targets.txt",
+        "Full v0.3 pipeline: python main.py --profile full"
+      ]
+    },
+    {
+      "name": "May — RedScanner v0.2 (CDN upgrade validation)",
       "tasks": [
         "Quick header audit: python main.py --profile header-only",
         "Vuln scan: april-vuln or full; tune nuclei_tags / nuclei_exclude_tags (default excludes dos,fuzz)",
         "Regression: python scan_diff.py output/<target>/<old>/report.json output/<target>/<new>/report.json --output diff.json",
-        "Confirm dalfox file-mode XSS against parameterized URLs from xcrawl3r crawl output",
-        "Triangulate automated findings manually before customer delivery"
-      ]
-    },
-    {
-      "name": "April — vulnerability discovery for the scoped domain",
-      "tasks": [
-        "Run april-vuln (vuln-focused) or full (adds naabu + nikto) against the authorized hostname; enable strict_domain_reports (or --strict-domain) for customer-facing reports that exclude off-host noise",
-        "Optionally set nuclei_extra_args in red_plan.json (e.g. [\"-as\"] for active scan) after reviewing nuclei documentation and rate limits",
-        "Use nuclei_tags (e.g. [\"cve\",\"oast\"]) and nuclei_exclude_tags (e.g. [\"dos\",\"fuzz\"]) to focus template selection",
-        "Review header_check findings for missing security headers (HSTS, CSP, X-Frame-Options) — quick wins for hardening reports",
-        "Triangulate nuclei/dalfox/sqlmap hits with Burp/ZAP; confirm impact before reporting"
+        "CDN upgrade test scripts: ./run_all.sh on the 1.29.2.3 node (functional/performance/rollback)",
+        "Open items from CDN test: TLS 1.0 still accepted, WAF returns 904, X-Cache-Status missing"
       ]
     },
     {
       "name": "OSINT and passive mapping",
       "tasks": [
-        "Certificate Transparency logs",
-        "Shodan / Censys reconnaissance",
+        "Certificate Transparency logs (crt.sh, Censys)",
+        "Shodan / Censys reconnaissance for origin IP",
         "DNS zone walk / AXFR attempt",
         "Google dork enumeration"
       ]
@@ -60,10 +66,21 @@
       "name": "Manual web application testing",
       "tasks": [
         "Burp Suite / ZAP proxy interception",
-        "Authentication and session testing",
+        "Authentication and session testing (JWT, session fixation)",
         "Business logic flaw analysis",
         "File upload and path traversal",
-        "CSRF, IDOR, privilege escalation"
+        "CSRF, IDOR, privilege escalation",
+        "Verify 7 critical SQLi findings from March scan manually"
+      ]
+    },
+    {
+      "name": "CDN & infrastructure (manual follow-up)",
+      "tasks": [
+        "HTTP smuggling (CL.TE / TE.CL) — h2c-smuggler or custom script",
+        "Cache poisoning — vary header manipulation, X-Forwarded-Host injection",
+        "WAF rule evaluation — test block_cause in naxsi.log for 904 responses",
+        "TLS downgrade — fix TLS 1.0/1.1 in ssl_protocols on 1.29.2.3 node",
+        "Rate-limit bypass testing"
       ]
     },
     {
@@ -79,6 +96,15 @@
     "https://attack.mitre.org/techniques/enterprise/",
     "https://owasp.org/www-project-web-security-testing-guide/",
     "https://nvd.nist.gov/",
-    "https://nuclei.projectdiscovery.io/"
+    "https://nuclei.projectdiscovery.io/",
+    "https://github.com/drwetter/testssl.sh",
+    "https://github.com/OJ/gobuster",
+    "https://github.com/ffuf/ffuf",
+    "https://github.com/hahwul/dalfox",
+    "https://github.com/sqlmapproject/sqlmap",
+    "https://github.com/projectdiscovery/naabu",
+    "https://github.com/sullo/nikto",
+    "https://portswigger.net/web-security/cors",
+    "https://portswigger.net/web-security/host-header"
   ]
 }

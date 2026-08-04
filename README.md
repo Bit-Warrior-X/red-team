@@ -1,172 +1,209 @@
-# RedScanner v0.2
+# RedScanner v0.3
 
-RedScanner is a Python orchestrator that chains external security tools into a single pipeline: reconnaissance, historical URL discovery, port scanning, template-based scanning, XSS/SQLi checks, JS secret pattern matching, HTTP security header analysis, and reporting. Engagement defaults and profiles live in **`assets/red_plan.json`**.
+Async Python security orchestrator for web application and CDN red team engagements.
+Chains external recon/vuln tools into a single pipeline with structured JSON, HTML,
+and Markdown output.
 
-Use only on systems you are authorized to test.
+## What's new in v0.3
 
-## Requirements
+| Feature | Details |
+|---------|---------|
+| CORS scanner | OWASP WSTG-CLIENT-07 — wildcard, origin reflection, credentialed CORS, suffix spoofing |
+| TLS scanner | OWASP WSTG-CRYP-01 — testssl.sh primary, openssl fallback; legacy protocol + cert checks |
+| Directory brute-force | OWASP WSTG-CONF-05 — gobuster → ffuf → built-in 50-path probe |
+| CDN bypass scanner | Origin IP exposure, IP header spoofing, Host injection, cache deception |
+| CVSS v3.1 scores | All new modules populate `cvss_score`; HTML report now includes CVSS column |
+| `--resume` | Resumes an interrupted scan from the last completed module |
+| `--target-file` | Batch scan from a text file of targets (one per line) |
+| New profiles | `web-hardening`, `discovery`, `cdn-test` added to red_plan.json |
 
-- **Python** 3.10+ (uses `asyncio`, type unions)
-- Optional **CLI tools** on `PATH` (missing tools are skipped; the log lists what was found):
+## Architecture
 
-  | Role | Typical binary |
-  |------|----------------|
-  | Subdomains / HTTP | `subfinder`, `httpx`, `assetfinder` |
-  | Crawl | `xcrawl3r` (see note below) |
-  | Historical URLs | `waybackurls`, `gau` |
-  | Ports | `naabu` |
-  | Scanning | `nuclei`, `nikto` |
-  | App testing | `dalfox`, `sqlmap` |
-  | Fetch | `curl` (fallback when `xcrawl3r` is absent; also used by `header_check` and `api_leak`) |
-
-Install tools from their upstream projects (e.g. ProjectDiscovery, PortSwigger docs for Burp are separate—Burp is not invoked by this script).
-
-### xcrawl3r
-
-This project runs **`xcrawl3r -u <url>`** only. In xcrawl3r v1.2+, **`-d` / `--domain` is for scope**, not crawl depth; depth is **`--depth`**. RedScanner does not pass `-d` for depth.
-
-## Quick start
-
-```bash
-cd /home/red
-python3 -m venv venv
-source venv/bin/activate
-# Install dependencies if you add a requirements.txt; the orchestrator uses mostly stdlib.
+```
+main.py
+├── core/
+│   ├── config.py        ScanConfig dataclass (all scan parameters)
+│   ├── models.py        Vulnerability / ScanResult dataclasses
+│   ├── tool_runner.py   async subprocess wrapper
+│   ├── red_plan.py      red_plan.json loader
+│   ├── db.py            SQLite state store
+│   ├── surface.py       URL surface aggregation helpers
+│   ├── domain_scope.py  in-scope domain filter
+│   └── crawl_fallback.py built-in crawler (when xcrawl3r absent)
+└── modules/
+    ├── recon.py              subfinder+assetfinder+httpx+xcrawl3r
+    ├── wayback_enricher.py   waybackurls+gau URL enrichment
+    ├── naabu_scanner.py      port scan
+    ├── vuln_scanner.py       nuclei
+    ├── xss_scanner.py        dalfox
+    ├── sqli_scanner.py       sqlmap
+    ├── api_leak_scanner.py   endpoint / key leak detection
+    ├── header_scanner.py     HTTP security header audit (WSTG-CONF-07)
+    ├── cors_scanner.py       CORS misconfiguration (WSTG-CLIENT-07)   ← v0.3
+    ├── tls_scanner.py        TLS/SSL assessment (WSTG-CRYP-01)        ← v0.3
+    ├── dirbust_scanner.py    directory enumeration (WSTG-CONF-05)     ← v0.3
+    ├── cdn_bypass_scanner.py CDN/WAF bypass tests                     ← v0.3
+    ├── nikto_scanner.py      nikto web server scan
+    └── report_generator.py   HTML + JSON + Markdown reports           ← v0.3 CVSS
 ```
 
-Edit **`assets/red_plan.json`** if you need another default **`domain`** or **`base_url`**.
+## Module execution order
+
+```
+recon → wayback → naabu → nuclei → xss → sqli → api_leak →
+header_check → cors → tls → dirbust → cdn_bypass → nikto
+```
+
+After each module completes, `resume.cfg` is updated. On `--resume`, completed
+modules are skipped and recon state is restored from output files.
+
+## Setup
+
+### Required (core pipeline)
 
 ```bash
-# List profiles (built-in + merged from red_plan.json)
-python main.py --list-profiles
+# Go tools
+go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+go install github.com/tomnomnom/assetfinder@latest
+go install github.com/projectdiscovery/httpx/cmd/httpx@latest
+go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+go install github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 
-# Full pipeline (default profile: full)
-python main.py
+# Python tools
+pip install dalfox   # or go install github.com/hahwul/dalfox/v2@latest
+pip install sqlmap
 
-# Explicit profile
-python main.py --profile lite
+# Other
+apt install nikto
+```
 
-# Another target
-python main.py -t example.com --profile quick
+### Optional (v0.3 new modules)
 
-# Header-only quick check
-python main.py --profile header-only
+```bash
+# TLS assessment
+git clone https://github.com/drwetter/testssl.sh
+chmod +x testssl.sh/testssl.sh
+# set testssl_path in red_plan.json or ensure testssl.sh is on PATH
+# openssl fallback works without testssl.sh
+
+# Directory brute-force
+go install github.com/OJ/gobuster/v3@latest
+go install github.com/ffuf/ffuf/v2@latest
+# built-in probe (~50 critical paths) runs without either tool
+```
+
+### Python dependencies
+
+```bash
+pip install httpx asyncio aiofiles
 ```
 
 ## Configuration
 
-- **`assets/red_plan.json`** — Default `domain`, `base_url`, `profiles`, `manual_phases`, `methodology_frameworks`, `research_references`, and `title` / `description` for reports. Optional keys:
-  - **`strict_domain_reports`** (bool) — drop findings whose URL host is not the target or a subdomain.
-  - **`nuclei_extra_args`** (array of strings) — append nuclei CLI flags (e.g. `["-as"]` — use only when allowed and documented).
-  - **`nuclei_tags`** (array of strings) — include only templates with these tags (e.g. `["cve","oast","tech"]` → `nuclei -tags cve,oast,tech`).
-  - **`nuclei_exclude_tags`** (array of strings) — exclude templates with these tags (e.g. `["dos","fuzz"]` → `nuclei -etags dos,fuzz`).
-  - **`header_check_enabled`** (bool, default true) — set to `false` to skip the HTTP security header module.
-- **`--plan-file`** — Point to an alternate JSON with the same shape.
+All scan parameters live in `assets/red_plan.json`. Key fields:
 
-If **`domain`** is set in the plan file, **`--target`** (`-t`) can be omitted.
-
-## Command-line reference
-
-```
-python main.py [-h] [-t TARGET] [--plan-file PATH] [-p PROFILE] [-m MODULES]
-               [-o OUTPUT] [--threads N] [--timeout SEC] [--rate-limit N]
-               [--list-profiles] [--max-wayback N] [--max-deep N]
-               [--strict-domain] [--no-header-check]
+```json
+{
+  "domain": "sec-test.skycloud.tw",
+  "base_url": "http://sec-test.skycloud.tw",
+  "cdn_origin_ip": "38.60.218.193",
+  "profiles": {
+    "full":          ["recon","wayback","naabu","nuclei","xss","sqli","api_leak","header_check","cors","tls","dirbust","cdn_bypass","nikto"],
+    "web-hardening": ["recon","header_check","cors","tls"],
+    "discovery":     ["recon","naabu","dirbust"],
+    "cdn-test":      ["recon","cors","tls","cdn_bypass","header_check"]
+  }
+}
 ```
 
-| Option | Description |
-|--------|-------------|
-| `-t`, `--target` | Target hostname (default: `domain` in `red_plan.json`) |
-| `--plan-file` | Engagement JSON (default: `assets/red_plan.json`) |
-| `-p`, `--profile` | Profile name (default: **`full`**) |
-| `-m`, `--modules` | Comma-separated modules; **overrides** `--profile` |
-| `-o`, `--output` | Output root directory (default: `./output`) |
-| `--threads` | Concurrency where supported (default: 10) |
-| `--timeout` | HTTP / tool timeout in seconds (default: 30) |
-| `--rate-limit` | Nuclei requests per second (default: 50) |
-| `--max-wayback` | Cap URLs from wayback/gau (default: 500) |
-| `--max-deep` | Max URLs for dalfox, sqlmap, api_leak (default: 25; nuclei uses full surface) |
-| `--strict-domain` | After scan, keep only findings on `-t` or its subdomains (also set `strict_domain_reports` in JSON) |
-| `--no-header-check` | Skip the HTTP security header check module |
-| `--list-profiles` | Print profiles and exit |
+`cdn_origin_ip` is required for the `cdn_bypass` module's origin-direct test.
 
-## Profiles and modules
-
-Modules run in this order when selected: **`recon`** → **`wayback`** → **`naabu`** → **`nuclei`** → **`xss`** → **`sqli`** → **`api_leak`** → **`header_check`** → **`nikto`**.
-
-Built-in profiles include:
-
-| Profile | Typical use |
-|---------|-------------|
-| `full` | All modules above |
-| `lite` | `recon`, `nuclei`, `xss`, `sqli`, `api_leak`, `header_check` |
-| `red-team` | Same as `full` in code |
-| `recon-only`, `quick`, `vuln-only` | As named |
-| `april-vuln` | Vuln-focused: same as **lite** plus **wayback** (historical URLs). No naabu/nikto. Use profile **`full`** when you want those on the same stack. |
-| `header-only` | `recon`, `header_check` — quick security header audit without vuln scanning |
-
-Additional profiles may be defined under **`profiles`** in **`assets/red_plan.json`**. Feature summary: **`assets/May.txt`**.
-
-## RedScanner v0.2 (May)
-
-### HTTP Security Header Scanner (`header_check` module)
-
-Checks response headers against OWASP recommendations:
-- **Missing security headers**: HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection
-- **Information disclosure headers**: Server, X-Powered-By, X-AspNet-Version
-- **Insecure cookies**: missing Secure, HttpOnly, or SameSite flags
-
-Uses `curl -I` (HEAD request) — no external tool installation needed beyond curl. Disable with `--no-header-check` or `"header_check_enabled": false` in red_plan.json.
-
-### Enhanced XSS Scanner (dalfox)
-
-The XSS module now uses **dalfox file mode** to feed parameterized crawled URLs (URLs with query strings) to dalfox in bulk, in addition to the existing single-URL mode per target. This dramatically increases XSS test surface when the crawler finds pages with query parameters.
-
-### Nuclei Template Tag Control
-
-Configure template selection in `red_plan.json` without editing code:
-- `"nuclei_tags": ["cve", "oast", "tech"]` → include only these template categories
-- `"nuclei_exclude_tags": ["dos", "fuzz"]` → skip disruptive templates (this pair is the **default** when the key is omitted or empty)
-- Works alongside `nuclei_extra_args` for full flexibility
-
-### Scan Diff Tool
-
-Compare two scan JSON reports to see what changed:
+## Usage
 
 ```bash
-python scan_diff.py output/.../old/report.json output/.../new/report.json
-python scan_diff.py old.json new.json --output diff.json
+# Standard scan using a profile
+python main.py --plan assets/red_plan.json --profile web-hardening
+
+# Full pipeline
+python main.py --plan assets/red_plan.json --profile full
+
+# CDN-specific tests
+python main.py --plan assets/red_plan.json --profile cdn-test
+
+# Resume an interrupted scan
+python main.py --plan assets/red_plan.json --resume
+
+# Batch scan from file (one target per line)
+python main.py --plan assets/red_plan.json --target-file targets.txt --profile full
+
+# Single module run
+python main.py --plan assets/red_plan.json --modules cors,tls
+
+# Specify output directory
+python main.py --plan assets/red_plan.json --profile full --output-dir output/june-run
 ```
 
-Shows new findings, resolved findings, unchanged count, and surface changes (domains, ports, crawled URLs). Useful for regression tracking between scan runs.
+### resume.cfg format
+
+```
+target=sec-test.skycloud.tw
+output_dir=output/sec-test.skycloud.tw/20260622_123456
+completed_modules=recon,wayback,naabu
+```
+
+`resume.cfg` is written after each module and cleared after a fully successful run.
+
+### targets.txt format
+
+```
+# SkyCloud web assets
+sec-test.skycloud.tw
+api.skycloud.com.tw
+# staging.skycloud.tw  (commented out)
+```
 
 ## Output
 
-Each run writes a timestamped directory:
-
-`output/<target>/<YYYYMMDD_HHMMSS>/`
-
-| Artifact | Purpose |
-|----------|---------|
-| `report.html` / `report.md` | Human-readable report with attack-surface tables |
-| `report.json` | Full run + `surface` (domains, URLs, ports, assets, parameters) |
-| `surface.json` | Same `surface` object only |
-| `results.db` | SQLite with assets and vulnerabilities |
-| `recon/` | `subdomains.txt`, `crawled_urls.txt`, naabu files, etc. |
-| `sqlmap/`, `nikto/` | Tool output when those modules ran |
-
-Logs also append to **`redscanner.log`** in the project root.
-
-## Project layout
+Each scan produces a timestamped directory under `output/<target>/<datetime>/`:
 
 ```
-main.py
-scan_diff.py               # Scan comparison utility
-assets/red_plan.json
-core/          # config, db, models, domain_scope, tool runner, surface helpers, plan loader
-modules/       # recon, scanners (vuln, xss, sqli, api_leak, header, naabu, nikto), report generator
+output/sec-test.skycloud.tw/20260622_143022/
+├── report.html      full report with CVSS column (open in browser)
+├── report.json      structured data for automation / diff
+├── report.md        Markdown summary
+├── surface.json     attack surface data (domains, ports, URLs, params)
+├── subdomains.txt   discovered hostnames
+├── crawled_urls.txt URLs from xcrawl3r/fallback crawler
+└── wayback_gau_urls.txt  historical URLs
 ```
 
-## Legal
+Compare two runs for regressions:
+```bash
+python scan_diff.py output/sec-test.skycloud.tw/old/report.json \
+                    output/sec-test.skycloud.tw/new/report.json \
+                    --output diff.json
+```
 
-Only use RedScanner against targets you own or have **explicit written permission** to assess. Unauthorized scanning may violate law; you are responsible for compliance.
+## CVSS scoring reference (v0.3 modules)
+
+| Finding | Severity | CVSS v3.1 |
+|---------|----------|-----------|
+| Credentialed CORS | Critical | 9.1 |
+| .env / .git / web.config exposed | Critical | 9.1 |
+| Origin server bypasses CDN | High | 7.5 |
+| Arbitrary CORS origin reflection | High | 7.5 |
+| Host header injection | High | 7.5 |
+| Expired TLS certificate | High | 8.2 |
+| TLS 1.0 / 1.1 accepted | Medium | 5.9 |
+| IP spoofing header accepted | Medium | 5.3 |
+| CORS wildcard (no credentials) | Medium | 5.3 |
+| Cache-Control missing on cookies | Medium | 5.3 |
+| Admin panel exposed | High | 7.5 |
+| Backup file exposed | High | 8.2 |
+
+## Methodology frameworks
+
+- MITRE ATT&CK (Enterprise + Cloud + Recon)
+- PTES — Penetration Testing Execution Standard
+- OWASP Web Security Testing Guide (WSTG)
+- NIST SP 800-115 — Technical Guide for Security Testing

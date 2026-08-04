@@ -1,12 +1,12 @@
 # ============================================================
-# core/config.py
+# core/config.py — RedScanner v0.3
 # ============================================================
-
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+
 
 @dataclass
 class ScanConfig:
@@ -15,9 +15,9 @@ class ScanConfig:
     output_dir: Path
     threads: int = 10
     timeout: int = 30
-    rate_limit: int = 50  # requests per second
+    rate_limit: int = 50  # nuclei requests per second
 
-    # Engagement (from assets/red_plan.json)
+    # Engagement metadata (from assets/red_plan.json)
     base_url: Optional[str] = None
     manual_phases: list[dict[str, Any]] = field(default_factory=list)
     research_references: list[str] = field(default_factory=list)
@@ -25,26 +25,37 @@ class ScanConfig:
     plan_description: Optional[str] = None
     methodology_frameworks: list[str] = field(default_factory=list)
 
-    # URLs from wayback/gau merged into scan surface (deduped in main)
+    # URLs collected by wayback/gau, merged into scan surface
     collected_urls: list[str] = field(default_factory=list)
     max_wayback_urls: int = 500
     max_nikto_hosts: int = 8
-    max_deep_scan_urls: int = 25  # dalfox, sqlmap, api_leak (nuclei uses full surface)
+    max_deep_scan_urls: int = 25  # cap for dalfox, sqlmap, api_leak, dirbust
 
-    # Engagement filters (from red_plan.json / CLI)
-    strict_domain_reports: bool = False  # drop findings whose URL host is not target or subdomain
-    nuclei_extra_args: list[str] = field(default_factory=list)  # e.g. ["-as"] for active scan (use with care)
+    # Scope / filtering
+    strict_domain_reports: bool = False  # drop findings outside target / its subdomains
 
-    # Nuclei template tag control (from red_plan.json)
-    # Example: nuclei_tags=["cve","oast","tech"] → nuclei -tags cve,oast,tech
-    # Example: nuclei_exclude_tags=["dos","fuzz"] → nuclei -etags dos,fuzz
+    # Nuclei template control
+    nuclei_extra_args: list[str] = field(default_factory=list)
     nuclei_tags: list[str] = field(default_factory=list)
     nuclei_exclude_tags: list[str] = field(default_factory=lambda: ["dos", "fuzz"])
 
-    # Header security check (new module)
-    header_check_enabled: bool = True  # set to False in JSON to skip header checks
+    # Header check module (v0.2+)
+    header_check_enabled: bool = True
 
-    # Tool paths (auto-detected or overridden)
+    # ── v0.3 additions ───────────────────────────────────────
+
+    # CDN bypass scanner: origin IP (from red_plan.json cdn_origin_ip)
+    cdn_origin_ip: str = ""
+
+    # Directory brute-force: optional wordlist override and extensions
+    dirbust_wordlist: str = ""
+    dirbust_extensions: list[str] = field(default_factory=lambda: ["php", "html", "txt", "bak", "zip", "sql"])
+
+    # Scan resume: set of module names already completed in a previous run
+    resume_skip: set[str] = field(default_factory=set)
+
+    # ── tool paths (auto-detected; override in red_plan.json or env) ─
+
     subfinder_path: str = "subfinder"
     httpx_path: str = "httpx"
     naabu_path: str = "naabu"
@@ -56,3 +67,7 @@ class ScanConfig:
     assetfinder_path: str = "assetfinder"
     waybackurls_path: str = "waybackurls"
     gau_path: str = "gau"
+    # v0.3 new tools
+    gobuster_path: str = "gobuster"
+    ffuf_path: str = "ffuf"
+    testssl_path: str = "testssl.sh"

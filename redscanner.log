@@ -1365,3 +1365,335 @@
 2026-06-15 16:20:24,939 [INFO] redscanner:   Critical: 0  High: 0  Medium: 1  Low: 4  Info: 3
 2026-06-15 16:20:24,939 [INFO] redscanner: Reports saved to: output/apex.api.macrocosmos.ai/20260615_161748
 2026-06-15 16:20:24,940 [INFO] redscanner: ============================================================
+2026-06-30 11:59:11,186 [INFO] redscanner: RedScanner v0.2 — scan 20260630_115911 against sec-test.skycloud.tw
+2026-06-30 11:59:11,186 [INFO] redscanner: Engagement plan: Red team engagement plan
+2026-06-30 11:59:11,186 [INFO] redscanner: Frameworks: MITRE ATT&CK (Enterprise + Cloud + Recon); PTES — Penetration Testing Execution Standard; OWASP Web Security Testing Guide (WSTG); NIST SP 800-115 — Technical Guide for Security Testing
+2026-06-30 11:59:11,187 [INFO] redscanner: Modules (ordered): recon, wayback, naabu, nuclei, xss, sqli, api_leak, header_check, nikto, cors, tls, dirbust, cdn_bypass
+2026-06-30 11:59:11,187 [INFO] redscanner: Output: output/sec-test.skycloud.tw/20260630_115911
+2026-06-30 11:59:11,190 [INFO] redscanner: External tools on PATH: subfinder, httpx, assetfinder, xcrawl3r, waybackurls, gau, naabu, nuclei, dalfox, sqlmap, nikto
+2026-06-30 11:59:11,190 [INFO] redscanner: ============================================================
+2026-06-30 11:59:11,190 [INFO] redscanner: PHASE: Reconnaissance (subfinder, assetfinder, httpx, xcrawl3r)
+2026-06-30 11:59:11,190 [INFO] redscanner: ============================================================
+2026-06-30 11:59:11,190 [INFO] redscanner.runner: Running: subfinder -d sec-test.skycloud.tw -silent -all
+2026-06-30 11:59:57,079 [INFO] redscanner: subfinder found 0 subdomains
+2026-06-30 11:59:57,081 [INFO] redscanner.runner: Running: assetfinder sec-test.skycloud.tw
+2026-06-30 12:00:24,324 [INFO] redscanner.runner: Running: httpx -l /tmp/tmpjskvhqzr.txt -json -status-code -title -tech-detect -silent
+2026-06-30 12:00:24,604 [INFO] redscanner: Discovered 0 HTTP assets
+2026-06-30 12:00:24,604 [INFO] redscanner: ============================================================
+2026-06-30 12:00:24,605 [INFO] redscanner: PHASE: Historical URLs (waybackurls, gau)
+2026-06-30 12:00:24,605 [INFO] redscanner: ============================================================
+2026-06-30 12:00:24,606 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:00:35,950 [INFO] redscanner.runner: Running: gau sec-test.skycloud.tw
+2026-06-30 12:01:39,516 [INFO] redscanner: Wayback/gau collected 0 URLs (cap 500)
+2026-06-30 12:01:39,517 [INFO] redscanner: Collected 0 historical URLs for downstream scanners
+2026-06-30 12:01:39,517 [INFO] redscanner: ============================================================
+2026-06-30 12:01:39,517 [INFO] redscanner: PHASE: Port scan (naabu)
+2026-06-30 12:01:39,517 [INFO] redscanner: ============================================================
+2026-06-30 12:01:39,519 [INFO] redscanner.runner: Running: naabu -l output/sec-test.skycloud.tw/20260630_115911/recon/naabu_hosts.txt -silent -top-ports 1000 -rate 500
+2026-06-30 12:02:03,513 [INFO] redscanner: naabu reported 2 open ports (info findings)
+2026-06-30 12:02:03,514 [INFO] redscanner: ============================================================
+2026-06-30 12:02:03,514 [INFO] redscanner: PHASE: Nuclei
+2026-06-30 12:02:03,514 [INFO] redscanner: ============================================================
+2026-06-30 12:02:03,515 [INFO] redscanner: Nuclei template exclude tags: dos,fuzz
+2026-06-30 12:02:03,516 [INFO] redscanner.runner: Running: nuclei -l /tmp/tmp1i76cttm.txt -json -silent -severity critical,high,medium,low -rate-limit 50 -c 10 -etags dos,fuzz
+2026-06-30 12:02:03,814 [INFO] redscanner: Nuclei reported 0 findings
+2026-06-30 12:02:03,814 [INFO] redscanner: ============================================================
+2026-06-30 12:02:03,815 [INFO] redscanner: PHASE: XSS (dalfox)
+2026-06-30 12:02:03,815 [INFO] redscanner: ============================================================
+2026-06-30 12:02:03,816 [INFO] redscanner.runner: Running: dalfox url http://sec-test.skycloud.tw --format json --silence --timeout 30 --worker 10
+2026-06-30 12:02:04,514 [INFO] redscanner: Dalfox reported 0 findings
+2026-06-30 12:02:04,514 [INFO] redscanner: ============================================================
+2026-06-30 12:02:04,514 [INFO] redscanner: PHASE: SQLi (sqlmap)
+2026-06-30 12:02:04,514 [INFO] redscanner: ============================================================
+2026-06-30 12:02:04,515 [INFO] redscanner.runner: Running: sqlmap -u http://sec-test.skycloud.tw --batch --smart --level 2 --risk 1 --output-dir output/sec-test.skycloud.tw/20260630_115911/sqlmap --forms --crawl=2
+2026-06-30 12:07:04,520 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 12:07:04,520 [INFO] redscanner: SQLmap reported 0 findings
+2026-06-30 12:07:04,520 [INFO] redscanner: ============================================================
+2026-06-30 12:07:04,521 [INFO] redscanner: PHASE: API / secret patterns in JS
+2026-06-30 12:07:04,521 [INFO] redscanner: ============================================================
+2026-06-30 12:07:04,522 [INFO] redscanner.runner: Running: xcrawl3r -u http://sec-test.skycloud.tw
+2026-06-30 12:07:33,350 [INFO] redscanner: API leak scan reported 0 findings
+2026-06-30 12:07:33,350 [INFO] redscanner: ============================================================
+2026-06-30 12:07:33,351 [INFO] redscanner: PHASE: HTTP Security Headers (curl HEAD)
+2026-06-30 12:07:33,351 [INFO] redscanner: ============================================================
+2026-06-30 12:07:33,351 [INFO] redscanner.runner: Running: curl -s -I -L --max-time 10 -A Mozilla/5.0 http://sec-test.skycloud.tw
+2026-06-30 12:07:43,368 [WARNING] redscanner: header_check: could not fetch headers for http://sec-test.skycloud.tw
+2026-06-30 12:07:43,369 [INFO] redscanner: Header scanner reported 0 findings
+2026-06-30 12:07:43,369 [INFO] redscanner: ============================================================
+2026-06-30 12:07:43,369 [INFO] redscanner: PHASE: Nikto
+2026-06-30 12:07:43,369 [INFO] redscanner: ============================================================
+2026-06-30 12:07:43,371 [INFO] redscanner.runner: Running: nikto -h http://sec-test.skycloud.tw -maxtime 120s -useragent Mozilla/5.0
+2026-06-30 12:07:43,506 [INFO] redscanner: nikto pass complete (1 hosts), parsed 0 lines
+2026-06-30 12:07:43,506 [INFO] redscanner: Nikto parsed 0 notable lines
+2026-06-30 12:07:43,506 [WARNING] redscanner: Unknown module skipped: cors
+2026-06-30 12:07:43,507 [WARNING] redscanner: Unknown module skipped: tls
+2026-06-30 12:07:43,507 [WARNING] redscanner: Unknown module skipped: dirbust
+2026-06-30 12:07:43,507 [WARNING] redscanner: Unknown module skipped: cdn_bypass
+2026-06-30 12:07:43,510 [INFO] redscanner: ============================================================
+2026-06-30 12:07:43,510 [INFO] redscanner: Generating Reports
+2026-06-30 12:07:43,510 [INFO] redscanner: ============================================================
+2026-06-30 12:07:43,511 [INFO] redscanner.report: JSON report: output/sec-test.skycloud.tw/20260630_115911/report.json
+2026-06-30 12:07:43,511 [INFO] redscanner.report: Surface JSON: output/sec-test.skycloud.tw/20260630_115911/surface.json
+2026-06-30 12:07:43,512 [INFO] redscanner.report: Markdown report: output/sec-test.skycloud.tw/20260630_115911/report.md
+2026-06-30 12:07:43,512 [INFO] redscanner.report: HTML report: output/sec-test.skycloud.tw/20260630_115911/report.html
+2026-06-30 12:07:43,512 [INFO] redscanner.report: Reports written to output/sec-test.skycloud.tw/20260630_115911
+2026-06-30 12:07:43,512 [INFO] redscanner: 
+2026-06-30 12:07:43,512 [INFO] redscanner: ============================================================
+2026-06-30 12:07:43,512 [INFO] redscanner: SCAN COMPLETE — 20260630_115911
+2026-06-30 12:07:43,512 [INFO] redscanner: Target: sec-test.skycloud.tw
+2026-06-30 12:07:43,512 [INFO] redscanner: Duration: 512.3s
+2026-06-30 12:07:43,512 [INFO] redscanner: Assets discovered: 0
+2026-06-30 12:07:43,513 [INFO] redscanner: Total findings: 2
+2026-06-30 12:07:43,513 [INFO] redscanner:   Critical: 0  High: 0  Medium: 0  Low: 0  Info: 2
+2026-06-30 12:07:43,513 [INFO] redscanner: Reports saved to: output/sec-test.skycloud.tw/20260630_115911
+2026-06-30 12:07:43,513 [INFO] redscanner: ============================================================
+2026-06-30 12:11:26,646 [INFO] redscanner: RedScanner v0.2 — scan 20260630_121126 against freetodolist.com
+2026-06-30 12:11:26,647 [INFO] redscanner: Engagement plan: Red team engagement plan
+2026-06-30 12:11:26,647 [INFO] redscanner: Frameworks: MITRE ATT&CK (Enterprise + Cloud + Recon); PTES — Penetration Testing Execution Standard; OWASP Web Security Testing Guide (WSTG); NIST SP 800-115 — Technical Guide for Security Testing
+2026-06-30 12:11:26,647 [INFO] redscanner: Modules (ordered): recon, wayback, naabu, nuclei, xss, sqli, api_leak, header_check, nikto, cors, tls, dirbust, cdn_bypass
+2026-06-30 12:11:26,647 [INFO] redscanner: Output: output/freetodolist.com/20260630_121126
+2026-06-30 12:11:26,650 [INFO] redscanner: External tools on PATH: subfinder, httpx, assetfinder, xcrawl3r, waybackurls, gau, naabu, nuclei, dalfox, sqlmap, nikto
+2026-06-30 12:11:26,650 [INFO] redscanner: ============================================================
+2026-06-30 12:11:26,650 [INFO] redscanner: PHASE: Reconnaissance (subfinder, assetfinder, httpx, xcrawl3r)
+2026-06-30 12:11:26,650 [INFO] redscanner: ============================================================
+2026-06-30 12:11:26,650 [INFO] redscanner.runner: Running: subfinder -d freetodolist.com -silent -all
+2026-06-30 12:12:01,769 [INFO] redscanner: subfinder found 8 subdomains
+2026-06-30 12:12:01,771 [INFO] redscanner.runner: Running: assetfinder freetodolist.com
+2026-06-30 12:13:21,897 [INFO] redscanner: assetfinder added 1 hostnames
+2026-06-30 12:13:21,899 [INFO] redscanner.runner: Running: httpx -l /tmp/tmpp3e0qaob.txt -json -status-code -title -tech-detect -silent
+2026-06-30 12:13:22,175 [INFO] redscanner: Discovered 0 HTTP assets
+2026-06-30 12:13:22,175 [INFO] redscanner: ============================================================
+2026-06-30 12:13:22,175 [INFO] redscanner: PHASE: Historical URLs (waybackurls, gau)
+2026-06-30 12:13:22,176 [INFO] redscanner: ============================================================
+2026-06-30 12:13:22,177 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:14:19,157 [INFO] redscanner.runner: Running: gau autodiscover.freetodolist.com
+2026-06-30 12:15:00,267 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:15:16,081 [INFO] redscanner.runner: Running: gau cpanel.freetodolist.com
+2026-06-30 12:16:13,091 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:16:40,322 [INFO] redscanner.runner: Running: gau cpcalendars.freetodolist.com
+2026-06-30 12:17:37,872 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:18:07,891 [INFO] redscanner.runner: Running: gau cpcontacts.freetodolist.com
+2026-06-30 12:18:43,663 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:18:59,132 [INFO] redscanner.runner: Running: gau freetodolist.com
+2026-06-30 12:19:55,789 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:20:22,979 [INFO] redscanner.runner: Running: gau mail.freetodolist.com
+2026-06-30 12:21:23,087 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:21:41,927 [INFO] redscanner.runner: Running: gau webdisk.freetodolist.com
+2026-06-30 12:22:28,975 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:23:04,941 [INFO] redscanner.runner: Running: gau webmail.freetodolist.com
+2026-06-30 12:24:00,110 [INFO] redscanner.runner: Running: waybackurls
+2026-06-30 12:24:12,291 [INFO] redscanner.runner: Running: gau www.freetodolist.com
+2026-06-30 12:25:09,580 [INFO] redscanner: Wayback/gau collected 320 URLs (cap 500)
+2026-06-30 12:25:09,580 [INFO] redscanner: Collected 320 historical URLs for downstream scanners
+2026-06-30 12:25:09,581 [INFO] redscanner: ============================================================
+2026-06-30 12:25:09,581 [INFO] redscanner: PHASE: Port scan (naabu)
+2026-06-30 12:25:09,581 [INFO] redscanner: ============================================================
+2026-06-30 12:25:09,583 [INFO] redscanner.runner: Running: naabu -l output/freetodolist.com/20260630_121126/recon/naabu_hosts.txt -silent -top-ports 1000 -rate 500
+2026-06-30 12:25:33,466 [INFO] redscanner: naabu reported 2 open ports (info findings)
+2026-06-30 12:25:33,467 [INFO] redscanner: ============================================================
+2026-06-30 12:25:33,467 [INFO] redscanner: PHASE: Nuclei
+2026-06-30 12:25:33,467 [INFO] redscanner: ============================================================
+2026-06-30 12:25:33,468 [INFO] redscanner: Nuclei template exclude tags: dos,fuzz
+2026-06-30 12:25:33,469 [INFO] redscanner.runner: Running: nuclei -l /tmp/tmp9dzelp5j.txt -json -silent -severity critical,high,medium,low -rate-limit 50 -c 10 -etags dos,fuzz
+2026-06-30 12:25:33,766 [INFO] redscanner: Nuclei reported 0 findings
+2026-06-30 12:25:33,766 [INFO] redscanner: ============================================================
+2026-06-30 12:25:33,766 [INFO] redscanner: PHASE: XSS (dalfox)
+2026-06-30 12:25:33,766 [INFO] redscanner: ============================================================
+2026-06-30 12:25:33,768 [INFO] redscanner.runner: Running: dalfox url http://www.freetodolist.com:80/ --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:33,932 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/ai-plugin.json --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:34,093 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/assetlinks.json --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:34,256 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/dnt-policy.txt --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:34,411 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/gpc.json --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:34,569 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/nodeinfo --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:34,742 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/openid-configuration --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:34,907 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/security.txt --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:35,063 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/.well-known/trust.txt --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:35,223 [INFO] redscanner.runner: Running: dalfox url http://freetodolist.com:80/?redir=frame&uid=freetodolist51bbca0d2c7643.44681773 --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:35,385 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/?tw --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:35,545 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/?twitter --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:35,705 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/admin --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:35,863 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/ads.txt --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:36,029 [INFO] redscanner.runner: Running: dalfox url http://www.freetodolist.com:80/agreement-free-printable-rental.htm?tkn=JxxPN1WKa3YKEwiGl-DX8LqPAhUpLYYKHVQxghQYACAAOA0 --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:36,186 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/api_docs --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:36,334 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/app-ads.txt --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:36,494 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/apple-touch-icon.png --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:36,655 [INFO] redscanner.runner: Running: dalfox url https://www.freetodolist.com/assets/application-0202a0c7f8dea2e4730340e94dbf33f7cecd2a18d11724fadff6d436d217a62e.css --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:36,814 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/assets/application-092ac8091dbaece7e855f3663b6b0faae44a04a31365a9cd5f84ea600d0b838a.css --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:36,972 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/assets/application-37f365cbecf1fa2810a8303f4b6571676fa1f9c56c248528bc14ddb857531b95.js --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:37,138 [INFO] redscanner.runner: Running: dalfox url https://freetodolist.com/assets/application-5f902d1c9343eb3e3fa318b321fcb0ea409619d0c50e5959cd6fd3327908762c.css --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:37,308 [INFO] redscanner.runner: Running: dalfox url https://www.freetodolist.com/assets/application-73b121890a5fcf1a3bd7c03dfcd389ca6e5e50a64af5e4143319aa41141a204c.css --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:37,470 [INFO] redscanner.runner: Running: dalfox url https://www.freetodolist.com/assets/application-9c2cc8a40d8058254e79f97c6774030639a0100d7bad18ac8501c1b628346593.js --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:37,638 [INFO] redscanner.runner: Running: dalfox url https://www.freetodolist.com/assets/application-c13d00486ffc8e619584f9e4abc74b5336220af975f18d1b24a33e23146cbc95.js --format json --silence --timeout 30 --worker 10
+2026-06-30 12:25:37,800 [INFO] redscanner: Dalfox reported 0 findings
+2026-06-30 12:25:37,801 [INFO] redscanner: ============================================================
+2026-06-30 12:25:37,801 [INFO] redscanner: PHASE: SQLi (sqlmap)
+2026-06-30 12:25:37,801 [INFO] redscanner: ============================================================
+2026-06-30 12:25:37,802 [INFO] redscanner.runner: Running: sqlmap -u http://www.freetodolist.com:80/ --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:25:44,555 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/ai-plugin.json --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:30:44,572 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 12:30:44,572 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/assetlinks.json --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:32:41,681 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/dnt-policy.txt --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:37:41,688 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 12:37:41,688 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/gpc.json --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:42:41,693 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 12:42:41,693 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/nodeinfo --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:47:41,712 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 12:47:41,712 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/openid-configuration --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:52:41,740 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 12:52:41,740 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/security.txt --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:54:56,273 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/.well-known/trust.txt --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 12:59:56,283 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 12:59:56,284 [INFO] redscanner.runner: Running: sqlmap -u http://freetodolist.com:80/?redir=frame&uid=freetodolist51bbca0d2c7643.44681773 --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:04:56,293 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:04:56,293 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/?tw --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:09:56,303 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:09:56,304 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/?twitter --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:14:56,334 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:14:56,335 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/admin --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:19:56,351 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:19:56,352 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/ads.txt --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:24:56,373 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:24:56,374 [INFO] redscanner.runner: Running: sqlmap -u http://www.freetodolist.com:80/agreement-free-printable-rental.htm?tkn=JxxPN1WKa3YKEwiGl-DX8LqPAhUpLYYKHVQxghQYACAAOA0 --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:25:39,057 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/api_docs --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:30:39,160 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:30:39,161 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/app-ads.txt --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:35:39,169 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:35:39,169 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/apple-touch-icon.png --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:40:39,177 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:40:39,177 [INFO] redscanner.runner: Running: sqlmap -u https://www.freetodolist.com/assets/application-0202a0c7f8dea2e4730340e94dbf33f7cecd2a18d11724fadff6d436d217a62e.css --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:41:03,713 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/assets/application-092ac8091dbaece7e855f3663b6b0faae44a04a31365a9cd5f84ea600d0b838a.css --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:46:03,730 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:46:03,730 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/assets/application-37f365cbecf1fa2810a8303f4b6571676fa1f9c56c248528bc14ddb857531b95.js --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:51:03,736 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:51:03,737 [INFO] redscanner.runner: Running: sqlmap -u https://freetodolist.com/assets/application-5f902d1c9343eb3e3fa318b321fcb0ea409619d0c50e5959cd6fd3327908762c.css --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 13:56:03,765 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 13:56:03,766 [INFO] redscanner.runner: Running: sqlmap -u https://www.freetodolist.com/assets/application-73b121890a5fcf1a3bd7c03dfcd389ca6e5e50a64af5e4143319aa41141a204c.css --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 14:01:03,790 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 14:01:03,790 [INFO] redscanner.runner: Running: sqlmap -u https://www.freetodolist.com/assets/application-9c2cc8a40d8058254e79f97c6774030639a0100d7bad18ac8501c1b628346593.js --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 14:06:03,799 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 14:06:03,799 [INFO] redscanner.runner: Running: sqlmap -u https://www.freetodolist.com/assets/application-c13d00486ffc8e619584f9e4abc74b5336220af975f18d1b24a33e23146cbc95.js --batch --smart --level 2 --risk 1 --output-dir output/freetodolist.com/20260630_121126/sqlmap --forms --crawl=2
+2026-06-30 14:11:03,832 [ERROR] redscanner.runner: Tool timed out after 300s: sqlmap
+2026-06-30 14:11:03,832 [INFO] redscanner: SQLmap reported 2 findings
+2026-06-30 14:11:03,832 [INFO] redscanner: ============================================================
+2026-06-30 14:11:03,832 [INFO] redscanner: PHASE: API / secret patterns in JS
+2026-06-30 14:11:03,833 [INFO] redscanner: ============================================================
+2026-06-30 14:11:03,834 [INFO] redscanner.runner: Running: xcrawl3r -u http://www.freetodolist.com:80/
+2026-06-30 14:11:21,455 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/ai-plugin.json
+2026-06-30 14:11:32,204 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/assetlinks.json
+2026-06-30 14:11:53,010 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/dnt-policy.txt
+2026-06-30 14:11:53,919 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/gpc.json
+2026-06-30 14:12:04,642 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/nodeinfo
+2026-06-30 14:12:22,612 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/openid-configuration
+2026-06-30 14:12:29,297 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/security.txt
+2026-06-30 14:12:30,450 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/.well-known/trust.txt
+2026-06-30 14:12:36,498 [INFO] redscanner.runner: Running: xcrawl3r -u http://freetodolist.com:80/?redir=frame&uid=freetodolist51bbca0d2c7643.44681773
+2026-06-30 14:13:04,056 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/?tw
+2026-06-30 14:13:05,230 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/application-9c2cc8a40d8058254e79f97c6774030639a0100d7bad18ac8501c1b628346593.js
+2026-06-30 14:13:12,450 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/turbo.min-cd3ce4205eaa3eb1f80c30fedaf47bccb15a7668eb53b1cb1a5e0dda16009d4d.js
+2026-06-30 14:13:22,467 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/stimulus.min-dd364f16ec9504dfb72672295637a1c8838773b01c0b441bd41008124c407894.js
+2026-06-30 14:13:29,666 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/stimulus-loading-3576ce92b149ad5d6959438c6f291e2426c86df3b874c525b30faad51b0d96b3.js
+2026-06-30 14:13:39,681 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/sortablejs-68686d1e12934ac42f22f33f54142790b1871ade677693308b23c8b38866f8c6.js
+2026-06-30 14:13:46,882 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/chartkick-8eb76e6cbdb540d495739fce84049fd038e59e7fd55c9e08e47b0b5a74b62db4.js
+2026-06-30 14:13:56,898 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/Chart.bundle-34c49f4b7464e81bdb4766d2cfa073403b76249d50b32c5829c706bf1e866cc6.js
+2026-06-30 14:14:02,874 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/application-368d98631bccbf2349e0d4f8269afb3fe9625118341966de054759d96ea86c7e.js
+2026-06-30 14:14:11,159 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/autofocus_controller-d261c804af51c9c21a147db8da2c606a0bd9cc91d12feb17fe861c43c4c2ea71.js
+2026-06-30 14:14:11,427 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/bulk_due_date_controller-e6961e6b49d2f97608739c5cb5eabe737e69db9cf618675be3ae9f50d047fa27.js
+2026-06-30 14:14:18,626 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/bulk_select_controller-91a3a81e430c561d9f101c9275df7ac08c67eeda66cbeaf674e71dbe45fa65b2.js
+2026-06-30 14:14:28,643 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/date_selector_controller-09ab8b7bd5f7ffab00473efec450e5960bd08cb70b4b94e39d0035f5b66a5aca.js
+2026-06-30 14:14:35,842 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/dropdown_controller-b29140f204f86ebe79752456a4af12185195301dd654ff5a1ffcf27e61dcb7de.js
+2026-06-30 14:14:36,112 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/flash_toast_controller-6933e0367e64a0bf8ed811509d23570b593e6f764b37b04684274e07f738e148.js
+2026-06-30 14:14:36,382 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/hello_controller-549135e8e7c683a538c3d6d517339ba470fcfb79d62f738a0a089ba41851a554.js
+2026-06-30 14:14:44,647 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/index-9cb4fe6c8d51622e163ab744fbb163582ccf9114b072eb3634a6a495d2b682fc.js
+2026-06-30 14:14:51,842 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/item_modal_controller-6544da975e794715932ae02b8bb7582cf0740299e1af2dabbc847f41bfa5bc9b.js
+2026-06-30 14:14:59,074 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/list_background_picker_controller-e80c30cb798f5a34df621c6b59dc722618942921b6ed333f90b0a7475c382cf3.js
+2026-06-30 14:15:06,242 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/list_filter_controller-05c6222bf96bc0af216e889854a33d88eb411da15ed0407e8d087ee0f91e5ef5.js
+2026-06-30 14:15:06,541 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/mobile_drawer_controller-aad5b4c5f11765b020f1f02a733f52d4d376d379eb3964f5f4ee692fbf4fcced.js
+2026-06-30 14:15:16,556 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/?twitter
+2026-06-30 14:15:46,897 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/admin
+2026-06-30 14:15:52,976 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/application-9c2cc8a40d8058254e79f97c6774030639a0100d7bad18ac8501c1b628346593.js
+2026-06-30 14:16:02,993 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/turbo.min-cd3ce4205eaa3eb1f80c30fedaf47bccb15a7668eb53b1cb1a5e0dda16009d4d.js
+2026-06-30 14:16:13,010 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/stimulus.min-dd364f16ec9504dfb72672295637a1c8838773b01c0b441bd41008124c407894.js
+2026-06-30 14:16:18,460 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/stimulus-loading-3576ce92b149ad5d6959438c6f291e2426c86df3b874c525b30faad51b0d96b3.js
+2026-06-30 14:16:18,733 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/sortablejs-68686d1e12934ac42f22f33f54142790b1871ade677693308b23c8b38866f8c6.js
+2026-06-30 14:16:28,747 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/chartkick-8eb76e6cbdb540d495739fce84049fd038e59e7fd55c9e08e47b0b5a74b62db4.js
+2026-06-30 14:16:29,205 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/Chart.bundle-34c49f4b7464e81bdb4766d2cfa073403b76249d50b32c5829c706bf1e866cc6.js
+2026-06-30 14:16:36,417 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/application-368d98631bccbf2349e0d4f8269afb3fe9625118341966de054759d96ea86c7e.js
+2026-06-30 14:16:41,693 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/autofocus_controller-d261c804af51c9c21a147db8da2c606a0bd9cc91d12feb17fe861c43c4c2ea71.js
+2026-06-30 14:16:41,963 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/bulk_due_date_controller-e6961e6b49d2f97608739c5cb5eabe737e69db9cf618675be3ae9f50d047fa27.js
+2026-06-30 14:16:51,980 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/bulk_select_controller-91a3a81e430c561d9f101c9275df7ac08c67eeda66cbeaf674e71dbe45fa65b2.js
+2026-06-30 14:16:59,202 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/date_selector_controller-09ab8b7bd5f7ffab00473efec450e5960bd08cb70b4b94e39d0035f5b66a5aca.js
+2026-06-30 14:17:06,370 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/dropdown_controller-b29140f204f86ebe79752456a4af12185195301dd654ff5a1ffcf27e61dcb7de.js
+2026-06-30 14:17:16,384 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/flash_toast_controller-6933e0367e64a0bf8ed811509d23570b593e6f764b37b04684274e07f738e148.js
+2026-06-30 14:17:16,655 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/hello_controller-549135e8e7c683a538c3d6d517339ba470fcfb79d62f738a0a089ba41851a554.js
+2026-06-30 14:17:23,842 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/index-9cb4fe6c8d51622e163ab744fbb163582ccf9114b072eb3634a6a495d2b682fc.js
+2026-06-30 14:17:33,859 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/item_modal_controller-6544da975e794715932ae02b8bb7582cf0740299e1af2dabbc847f41bfa5bc9b.js
+2026-06-30 14:17:34,136 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/list_background_picker_controller-e80c30cb798f5a34df621c6b59dc722618942921b6ed333f90b0a7475c382cf3.js
+2026-06-30 14:17:41,314 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/list_filter_controller-05c6222bf96bc0af216e889854a33d88eb411da15ed0407e8d087ee0f91e5ef5.js
+2026-06-30 14:17:41,575 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/mobile_drawer_controller-aad5b4c5f11765b020f1f02a733f52d4d376d379eb3964f5f4ee692fbf4fcced.js
+2026-06-30 14:17:48,738 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/ads.txt
+2026-06-30 14:17:54,665 [INFO] redscanner.runner: Running: xcrawl3r -u http://www.freetodolist.com:80/agreement-free-printable-rental.htm?tkn=JxxPN1WKa3YKEwiGl-DX8LqPAhUpLYYKHVQxghQYACAAOA0
+2026-06-30 14:17:55,434 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/api_docs
+2026-06-30 14:18:01,455 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/application-9c2cc8a40d8058254e79f97c6774030639a0100d7bad18ac8501c1b628346593.js
+2026-06-30 14:18:01,724 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/turbo.min-cd3ce4205eaa3eb1f80c30fedaf47bccb15a7668eb53b1cb1a5e0dda16009d4d.js
+2026-06-30 14:18:02,267 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/stimulus.min-dd364f16ec9504dfb72672295637a1c8838773b01c0b441bd41008124c407894.js
+2026-06-30 14:18:02,711 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/stimulus-loading-3576ce92b149ad5d6959438c6f291e2426c86df3b874c525b30faad51b0d96b3.js
+2026-06-30 14:18:12,726 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/sortablejs-68686d1e12934ac42f22f33f54142790b1871ade677693308b23c8b38866f8c6.js
+2026-06-30 14:18:13,182 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/chartkick-8eb76e6cbdb540d495739fce84049fd038e59e7fd55c9e08e47b0b5a74b62db4.js
+2026-06-30 14:18:13,635 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/Chart.bundle-34c49f4b7464e81bdb4766d2cfa073403b76249d50b32c5829c706bf1e866cc6.js
+2026-06-30 14:18:23,649 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/application-368d98631bccbf2349e0d4f8269afb3fe9625118341966de054759d96ea86c7e.js
+2026-06-30 14:18:33,665 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/autofocus_controller-d261c804af51c9c21a147db8da2c606a0bd9cc91d12feb17fe861c43c4c2ea71.js
+2026-06-30 14:18:33,922 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/bulk_due_date_controller-e6961e6b49d2f97608739c5cb5eabe737e69db9cf618675be3ae9f50d047fa27.js
+2026-06-30 14:18:43,939 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/bulk_select_controller-91a3a81e430c561d9f101c9275df7ac08c67eeda66cbeaf674e71dbe45fa65b2.js
+2026-06-30 14:18:53,955 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/date_selector_controller-09ab8b7bd5f7ffab00473efec450e5960bd08cb70b4b94e39d0035f5b66a5aca.js
+2026-06-30 14:19:03,971 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/dropdown_controller-b29140f204f86ebe79752456a4af12185195301dd654ff5a1ffcf27e61dcb7de.js
+2026-06-30 14:19:13,987 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/flash_toast_controller-6933e0367e64a0bf8ed811509d23570b593e6f764b37b04684274e07f738e148.js
+2026-06-30 14:19:19,264 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/hello_controller-549135e8e7c683a538c3d6d517339ba470fcfb79d62f738a0a089ba41851a554.js
+2026-06-30 14:19:19,532 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/index-9cb4fe6c8d51622e163ab744fbb163582ccf9114b072eb3634a6a495d2b682fc.js
+2026-06-30 14:19:26,722 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/item_modal_controller-6544da975e794715932ae02b8bb7582cf0740299e1af2dabbc847f41bfa5bc9b.js
+2026-06-30 14:19:33,890 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/list_background_picker_controller-e80c30cb798f5a34df621c6b59dc722618942921b6ed333f90b0a7475c382cf3.js
+2026-06-30 14:19:39,167 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/list_filter_controller-05c6222bf96bc0af216e889854a33d88eb411da15ed0407e8d087ee0f91e5ef5.js
+2026-06-30 14:19:46,370 [INFO] redscanner.runner: Running: curl -s -L --max-time 10 https://freetodolist.com/assets/controllers/mobile_drawer_controller-aad5b4c5f11765b020f1f02a733f52d4d376d379eb3964f5f4ee692fbf4fcced.js
+2026-06-30 14:19:46,643 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/app-ads.txt
+2026-06-30 14:19:57,456 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/apple-touch-icon.png
+2026-06-30 14:19:58,366 [INFO] redscanner.runner: Running: xcrawl3r -u https://www.freetodolist.com/assets/application-0202a0c7f8dea2e4730340e94dbf33f7cecd2a18d11724fadff6d436d217a62e.css
+2026-06-30 14:20:28,685 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/assets/application-092ac8091dbaece7e855f3663b6b0faae44a04a31365a9cd5f84ea600d0b838a.css
+2026-06-30 14:20:39,378 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/assets/application-37f365cbecf1fa2810a8303f4b6571676fa1f9c56c248528bc14ddb857531b95.js
+2026-06-30 14:20:55,113 [INFO] redscanner.runner: Running: xcrawl3r -u https://freetodolist.com/assets/application-5f902d1c9343eb3e3fa318b321fcb0ea409619d0c50e5959cd6fd3327908762c.css
+2026-06-30 14:21:15,901 [INFO] redscanner.runner: Running: xcrawl3r -u https://www.freetodolist.com/assets/application-73b121890a5fcf1a3bd7c03dfcd389ca6e5e50a64af5e4143319aa41141a204c.css
+2026-06-30 14:21:21,990 [INFO] redscanner.runner: Running: xcrawl3r -u https://www.freetodolist.com/assets/application-9c2cc8a40d8058254e79f97c6774030639a0100d7bad18ac8501c1b628346593.js
+2026-06-30 14:21:33,205 [INFO] redscanner.runner: Running: xcrawl3r -u https://www.freetodolist.com/assets/application-c13d00486ffc8e619584f9e4abc74b5336220af975f18d1b24a33e23146cbc95.js
+2026-06-30 14:21:34,095 [INFO] redscanner: API leak scan reported 0 findings
+2026-06-30 14:21:34,095 [INFO] redscanner: ============================================================
+2026-06-30 14:21:34,095 [INFO] redscanner: PHASE: HTTP Security Headers (curl HEAD)
+2026-06-30 14:21:34,095 [INFO] redscanner: ============================================================
+2026-06-30 14:21:34,096 [INFO] redscanner.runner: Running: curl -s -I -L --max-time 10 -A Mozilla/5.0 https://freetodolist.com
+2026-06-30 14:21:44,111 [WARNING] redscanner: header_check: could not fetch headers for https://freetodolist.com
+2026-06-30 14:21:44,111 [INFO] redscanner: Header scanner reported 0 findings
+2026-06-30 14:21:44,111 [INFO] redscanner: ============================================================
+2026-06-30 14:21:44,111 [INFO] redscanner: PHASE: Nikto
+2026-06-30 14:21:44,111 [INFO] redscanner: ============================================================
+2026-06-30 14:21:44,114 [INFO] redscanner.runner: Running: nikto -h https://freetodolist.com -maxtime 120s -useragent Mozilla/5.0
+2026-06-30 14:21:44,248 [INFO] redscanner: nikto pass complete (1 hosts), parsed 0 lines
+2026-06-30 14:21:44,248 [INFO] redscanner: Nikto parsed 0 notable lines
+2026-06-30 14:21:44,248 [WARNING] redscanner: Unknown module skipped: cors
+2026-06-30 14:21:44,248 [WARNING] redscanner: Unknown module skipped: tls
+2026-06-30 14:21:44,249 [WARNING] redscanner: Unknown module skipped: dirbust
+2026-06-30 14:21:44,249 [WARNING] redscanner: Unknown module skipped: cdn_bypass
+2026-06-30 14:21:44,253 [INFO] redscanner: ============================================================
+2026-06-30 14:21:44,253 [INFO] redscanner: Generating Reports
+2026-06-30 14:21:44,253 [INFO] redscanner: ============================================================
+2026-06-30 14:21:44,261 [INFO] redscanner.report: JSON report: output/freetodolist.com/20260630_121126/report.json
+2026-06-30 14:21:44,262 [INFO] redscanner.report: Surface JSON: output/freetodolist.com/20260630_121126/surface.json
+2026-06-30 14:21:44,278 [INFO] redscanner.report: Markdown report: output/freetodolist.com/20260630_121126/report.md
+2026-06-30 14:21:44,297 [INFO] redscanner.report: HTML report: output/freetodolist.com/20260630_121126/report.html
+2026-06-30 14:21:44,297 [INFO] redscanner.report: Reports written to output/freetodolist.com/20260630_121126
+2026-06-30 14:21:44,297 [INFO] redscanner: 
+2026-06-30 14:21:44,297 [INFO] redscanner: ============================================================
+2026-06-30 14:21:44,297 [INFO] redscanner: SCAN COMPLETE — 20260630_121126
+2026-06-30 14:21:44,297 [INFO] redscanner: Target: freetodolist.com
+2026-06-30 14:21:44,297 [INFO] redscanner: Duration: 7817.6s
+2026-06-30 14:21:44,298 [INFO] redscanner: Assets discovered: 0
+2026-06-30 14:21:44,298 [INFO] redscanner: Total findings: 4
+2026-06-30 14:21:44,298 [INFO] redscanner:   Critical: 2  High: 0  Medium: 0  Low: 0  Info: 2
+2026-06-30 14:21:44,298 [INFO] redscanner: Reports saved to: output/freetodolist.com/20260630_121126
+2026-06-30 14:21:44,298 [INFO] redscanner: ============================================================
