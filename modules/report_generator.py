@@ -103,7 +103,7 @@ class ReportGenerator:
     def _generate_json(self, results: ScanResult, vulns: list[Vulnerability]):
         surface = self._surface_payload(results, vulns)
         data = {
-            "redscanner_version": "0.3",
+            "redscanner_version": "0.3.1",
             "scan_id":            results.scan_id,
             "target":             results.target,
             "strict_domain_reports": self.config.strict_domain_reports,

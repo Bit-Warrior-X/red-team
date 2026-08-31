@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+export PYTHONPATH="/home/red/tools/pip:${PYTHONPATH:-}"
+if [ -x /home/red/tools/pip/bin/sqlmap ]; then
+  exec /home/red/tools/pip/bin/sqlmap "$@"
+fi
+exec python3 /home/red/tools/pip/sqlmap/sqlmap.py "$@"

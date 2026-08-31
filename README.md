@@ -1,4 +1,4 @@
-# RedScanner v0.3
+# RedScanner v0.3.1
 
 Async Python security orchestrator for web application and CDN red team engagements.
 Chains external recon/vuln tools into a single pipeline with structured JSON, HTML,
@@ -16,6 +16,24 @@ and Markdown output.
 | `--resume` | Resumes an interrupted scan from the last completed module |
 | `--target-file` | Batch scan from a text file of targets (one per line) |
 | New profiles | `web-hardening`, `discovery`, `cdn-test` added to red_plan.json |
+
+## v0.3.1 — wiring &amp; resume fixes
+
+The v0.3 modules above (`cors`, `tls`, `dirbust`, `cdn_bypass`) and the
+`--resume` / `--target-file` flags were implemented but never actually wired
+into `main.py` — running any v0.3 profile silently skipped them with an
+"Unknown module skipped" warning, and `--resume`/`--target-file` didn't exist
+as CLI flags at all. This pass fixes that:
+
+| Fix | Details |
+|-----|---------|
+| Module wiring | `cors`, `tls`, `dirbust`, `cdn_bypass` are now imported, ordered, and dispatched by `main.py`; `full`/`red-team` profiles run all 13 modules end to end |
+| `--resume` implemented | Reads/writes `resume.cfg` next to `main.py`; restores recon/wayback state from output files and per-module findings from `results.db` instead of re-running completed modules |
+| `--target-file` implemented | Batch-scans a newline-delimited target list sequentially, one output directory per target |
+| Incremental result persistence | Findings are now written to `results.db` after each module (tagged with a new `module` column), not just once at the very end — so an interrupted run leaves an accurate on-disk record for `--resume` |
+| Dirbust false-positive fix | `.env` / `.git` / config paths that return `HTTP 403` (access denied) were being reported as **critical — sensitive file exposed**; a 403 means the server correctly blocked the request, so this is now `low — sensitive_path_blocked` |
+| `--resume` base URL fix | `resume.cfg` now stores the resolved `base_url`, so resuming without repeating `--base-url` no longer silently re-resolves to a different URL (was flipping `https://` → `http://` in testing) |
+| `--plan` / `--plan-file` | Both flags now work (the README always documented `--plan`, the code only accepted `--plan-file`) |
 
 ## Architecture
 
@@ -140,18 +158,37 @@ python main.py --plan assets/red_plan.json --target-file targets.txt --profile f
 python main.py --plan assets/red_plan.json --modules cors,tls
 
 # Specify output directory
-python main.py --plan assets/red_plan.json --profile full --output-dir output/june-run
+python main.py --plan assets/red_plan.json --profile full --output output/june-run
 ```
 
 ### resume.cfg format
 
+`resume.cfg` lives next to `main.py` (not inside the per-scan output directory,
+since `--resume` needs to find it before it knows which output directory to
+use). It is rewritten after every completed module and deleted once the scan
+finishes successfully:
+
 ```
 target=sec-test.skycloud.tw
 output_dir=output/sec-test.skycloud.tw/20260622_123456
+scan_id=20260622_123456
+base_url=https://sec-test.skycloud.tw
+modules=recon,wayback,naabu,nuclei,xss,sqli,api_leak,header_check,cors,tls,dirbust,cdn_bypass,nikto
 completed_modules=recon,wayback,naabu
 ```
 
-`resume.cfg` is written after each module and cleared after a fully successful run.
+`--resume` reuses the stored `scan_id`, `output_dir`, `base_url`, and full
+`modules` list, so a bare `python main.py --resume` continues the interrupted
+scan exactly as it was invoked — you don't need to re-pass `--profile` or
+`--base-url`. Passing an explicit `--profile`/`--modules` or `--base-url` on
+the resume command overrides the stored value.
+
+**Known limitation:** only `target`, `output_dir`, `scan_id`, `base_url`, and
+the module list are persisted. Other tuning flags from the original
+invocation (`--threads`, `--timeout`, `--rate-limit`, `--max-deep`,
+`--max-wayback`, `--strict-domain`, `--no-header-check`) are *not* stored —
+repeat them on the `--resume` command if the original run used non-default
+values.
 
 ### targets.txt format
 
@@ -200,6 +237,7 @@ python scan_diff.py output/sec-test.skycloud.tw/old/report.json \
 | Cache-Control missing on cookies | Medium | 5.3 |
 | Admin panel exposed | High | 7.5 |
 | Backup file exposed | High | 8.2 |
+| Sensitive path exists but blocked (403 on .env/.git/etc.) | Low | 3.1 |
 
 ## Methodology frameworks
 

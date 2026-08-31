@@ -1,0 +1,24 @@
+Day1.
+RedScanner v0.3 — main.py module wiring
+The CORS, TLS, dirbust, and CDN-bypass scanner modules were fully built but never connected to main.py — no imports, no place in the run order, no dispatch logic. Any profile that used them (web-hardening, discovery, cdn-test, full, red-team) just skipped those steps silently. Wired all four in, fixed the module run order to match the README's 13-step pipeline, and synced the default profiles. Bumped version to 0.3.1.
+
+Result:
+- All 13 profiles now run their full module list (previously 3 profiles silently dropped steps).
+- Live test run across recon/header_check/cors/tls/dirbust completed clean, correct reports generated.
+
+Analytics:
+- About a third of the "shipped" v0.3 features had never actually run — this was invisible because a bad module name just logs a warning instead of an error.
+
+
+Day2.
+RedScanner v0.3.1 — resume, batch scanning, bug fixes
+--resume and --target-file were documented but didn't exist as real features. Built both: resume.cfg now tracks progress and lets an interrupted scan pick back up without rerunning finished steps; target-file batch-scans a list of hosts one after another. Also fixed a gap where scan results were only saved to disk at the very end — meaning a crash lost everything — by saving after each step instead.
+
+Result:
+- Killed a scan mid-run, resumed it — it skipped the 4 finished steps and finished the last one, same end result as an uninterrupted run.
+- Batch-scanned 2 targets from a file in one command.
+- Found and fixed 2 real bugs: dirbust was marking blocked (403) .env/.git paths as "critical exposure" when blocked actually means safe; resume wasn't remembering the original scan URL and could silently switch http/https.
+
+Analytics:
+- Without the incremental save fix, resume would have been pointless — an interrupted scan had nothing to resume from.
+- The dirbust bug would have generated fake critical findings on any site with a firewall — a real credibility problem if this report went to a client.

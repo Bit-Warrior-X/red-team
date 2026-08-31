@@ -100,7 +100,15 @@ def _classify(path: str, status: int) -> tuple[str, float, str]:
 
     for pattern in _CRITICAL_PATTERNS:
         if re.search(pattern, p):
-            return "critical", _CVSS["critical"], "sensitive_file_exposed"
+            if status in (200, 204, 301, 302, 307):
+                return "critical", _CVSS["critical"], "sensitive_file_exposed"
+            if status in (401, 403):
+                # Server actively denied access — the path exists (worth
+                # noting) but this is the secure outcome, not an exposure.
+                # (Previously misclassified as "critical" for any of
+                # _FOUND_STATUSES, which flagged correctly-blocked .env/.git
+                # paths as if the secrets were actually served.)
+                return "low", 3.1, "sensitive_path_blocked"
 
     for prefix in _HIGH_ADMIN:
         if p.startswith(prefix):
