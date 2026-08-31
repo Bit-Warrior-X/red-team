@@ -1,0 +1,122 @@
+August 2026 Work Progress — Red Team / Security Engineering
+==========================================================
+Engineer : Cliff (Anton) — anton@skycloud.com.tw
+Period   : 2026-08-01 to 2026-08-31
+Project  : RedScanner v0.4.0
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+August delivers RedScanner v0.4.0: HTTP method audit, CI/CD-ready
+reporting (SARIF + --fail-on), bundled dirbust wordlists with a fast
+reliable probe path, gobuster v2 compatibility, and triage.py for
+recording manual verification of automated findings.
+
+RedScanner v0.4.0 includes:
+  - modules/http_methods_scanner.py (OWASP WSTG-CONF-06)
+  - report.sarif (SARIF 2.1.0) + --fail-on severity exit codes
+  - assets/wordlists/common.txt (default) and all.txt (deep discovery)
+  - dirbust: gobuster v2 CLI, builtin probe first, large-list safeguards
+  - triage.py export/apply + verification_status on every finding
+  - Version 0.4.0 across main.py and report JSON/HTML/SARIF
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HTTP METHOD AUDIT (WSTG-CONF-06)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+modules/http_methods_scanner.py
+  - OPTIONS → Allow / Access-Control-Allow-Methods
+  - Flags PUT/DELETE (high), CONNECT/PATCH, uncommon methods
+  - TRACE only after active 200 + echo confirmation (XST)
+  - Wired into MODULE_ORDER after header_check; in full, red-team,
+    web-hardening profiles and red_plan.json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CI/CD: SARIF + --fail-on
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+modules/report_generator.py
+  - Writes report.sarif (rules per vuln_type, security-severity)
+  - redscanner_version 0.4.0; verification_status default "unverified"
+
+main.py
+  - --fail-on {critical,high,medium,low,info} → exit 2 on match, else 0
+  - Works for single target, --resume, and --target-file batch runs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIRBUST RELIABILITY AND SPEED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+assets/wordlists/
+  - common.txt (~4.7k) — default in red_plan.json
+  - all.txt (~165k) — deep discovery; auto-downgraded in full profile
+
+modules/dirbust_scanner.py
+  - Detects gobuster v2 vs v3 CLI
+  - Builtin high-value probe runs first (concurrent)
+  - Skips -x extensions on large wordlists; gobuster wall ~150s
+  - /metrics and /prometheus classified as medium debug endpoints
+
+core/tool_runner.py
+  - Kills timed-out child processes; optional quiet mode for probe spam
+
+Live check (apex.api.macrocosmos.ai): dirbust ~44s with /metrics,
+/prometheus, /docs reported (was ~600s timeout with empty gobuster).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TRIAGE.PY — MANUAL FINDING VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Problem: sqlmap, dalfox, and nuclei findings still need a human to
+confirm or mark false positive before client delivery. RedScanner had
+no file format for that outcome.
+
+Design: standalone script (like scan_diff.py) on finished report.json —
+no results.db changes, no --resume interaction.
+
+  python triage.py export output/<target>/<scan>/report.json
+  # edit triage_template.json → status + note
+  python triage.py apply  output/<target>/<scan>/report.json \
+                           output/<target>/<scan>/triage_template.json
+
+Outputs: report.verified.json, verification_summary.md
+Finding key: sha1(url|type|parameter|evidence|tool)[:12]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TESTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Local HTTPMethodsScanner unit test (OPTIONS + TRACE echo)
+- SARIF generation on synthetic findings
+- --fail-on exit-code checks (high → 2, critical → 0)
+- Dirbust smoke on apex.api.macrocosmos.ai (~44s, metrics/prometheus)
+- triage.py export/apply on live report.json (critical/high matched)
+- py_compile on main.py, report_generator.py, triage.py, dirbust_scanner.py
+- Full-profile re-run after speed defaults (common.txt)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OPEN ITEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Complete manual Burp review of critical/high findings via triage.py
+  (tooling is ready; analyst pass remains)
+- Optional deep dirbust with all.txt on a dedicated discovery run
+  (not the default full profile)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FILES DELIVERED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  triage.py
+  modules/http_methods_scanner.py
+  modules/dirbust_scanner.py          (v2 CLI, speed, builtin-first)
+  modules/report_generator.py         (SARIF + verification_status)
+  core/tool_runner.py                 (kill on timeout, quiet)
+  main.py                             (http_methods, --fail-on, v0.4.0)
+  assets/red_plan.json
+  assets/wordlists/common.txt
+  assets/wordlists/all.txt
+  README.md
+  assets/WorkHours_August.txt
+  assets/August.txt

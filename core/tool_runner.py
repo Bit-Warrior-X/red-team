@@ -17,6 +17,7 @@ async def run_tool(
     timeout: int = 300,
     parse_json_lines: bool = False,
     stdin_input: Optional[str] = None,
+    quiet: bool = False,
 ) -> dict:
     """
     Run an external CLI tool asynchronously.
@@ -24,10 +25,13 @@ async def run_tool(
     """
     tool_name = cmd[0]
     if not shutil.which(tool_name):
-        log.warning(f"Tool not found: {tool_name}. Skipping.")
+        if not quiet:
+            log.warning(f"Tool not found: {tool_name}. Skipping.")
         return {"stdout": "", "stderr": f"{tool_name} not installed", "returncode": -1, "json_lines": []}
 
-    log.info(f"Running: {' '.join(cmd)}")
+    if not quiet:
+        log.info(f"Running: {' '.join(cmd)}")
+    proc = None
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -57,8 +61,28 @@ async def run_tool(
             "json_lines": json_lines,
         }
     except asyncio.TimeoutError:
-        log.error(f"Tool timed out after {timeout}s: {tool_name}")
-        return {"stdout": "", "stderr": "timeout", "returncode": -1, "json_lines": []}
+        if not quiet:
+            log.error(f"Tool timed out after {timeout}s: {tool_name}")
+        stdout_str, stderr_str = "", "timeout"
+        if proc is not None:
+            try:
+                proc.kill()
+                out, err = await asyncio.wait_for(proc.communicate(), timeout=5)
+                stdout_str = out.decode("utf-8", errors="replace") if out else ""
+                err_txt = err.decode("utf-8", errors="replace") if err else ""
+                stderr_str = ("timeout\n" + err_txt).strip()
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+        return {"stdout": stdout_str, "stderr": stderr_str, "returncode": -1, "json_lines": []}
     except Exception as e:
-        log.error(f"Tool execution error: {e}")
+        if not quiet:
+            log.error(f"Tool execution error: {e}")
+        if proc is not None and proc.returncode is None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
         return {"stdout": "", "stderr": str(e), "returncode": -1, "json_lines": []}

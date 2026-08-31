@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RedScanner v0.3 — web vulnerability discovery orchestrator with a research-driven red-team plan.
+RedScanner v0.4 — web vulnerability discovery orchestrator with a research-driven red-team plan.
 
 Usage:
     python main.py --profile full
@@ -9,11 +9,16 @@ Usage:
     python main.py --resume
     python main.py --target-file targets.txt --profile full
     python scan_diff.py output/<target>/<old>/report.json output/<target>/<new>/report.json
+    python triage.py export output/<target>/<scan>/report.json
+    python triage.py apply  output/<target>/<scan>/report.json triage_template.json
 """
 
 from __future__ import annotations
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
+
+# Severity ranking, most→least severe, used by --fail-on gating.
+SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
 import argparse
 import asyncio
@@ -30,6 +35,7 @@ from modules.cdn_bypass_scanner import CDNBypassScanner
 from modules.cors_scanner import CORSScanner
 from modules.dirbust_scanner import DirbustScanner
 from modules.header_scanner import HeaderScanner
+from modules.http_methods_scanner import HTTPMethodsScanner
 from modules.naabu_scanner import NaabuScanner
 from modules.nikto_scanner import NiktoScanner
 from modules.recon import ReconEngine
@@ -73,6 +79,7 @@ PROFILES: dict[str, list[str]] = {
         "sqli",
         "api_leak",
         "header_check",
+        "http_methods",
         "cors",
         "tls",
         "dirbust",
@@ -89,13 +96,14 @@ PROFILES: dict[str, list[str]] = {
         "sqli",
         "api_leak",
         "header_check",
+        "http_methods",
         "cors",
         "tls",
         "dirbust",
         "cdn_bypass",
         "nikto",
     ],
-    "web-hardening": ["recon", "header_check", "cors", "tls"],
+    "web-hardening": ["recon", "header_check", "http_methods", "cors", "tls"],
     "discovery": ["recon", "naabu", "dirbust"],
     "cdn-test": ["recon", "cors", "tls", "cdn_bypass", "header_check"],
     "recon-only": ["recon"],
@@ -114,6 +122,7 @@ MODULE_ORDER = [
     "sqli",
     "api_leak",
     "header_check",
+    "http_methods",
     "cors",
     "tls",
     "dirbust",
@@ -329,6 +338,17 @@ class RedScanner:
             self.results.vulnerabilities.extend(vulns)
             self.results.modules_run.append("header_check")
             self.db.save_vulns(self.scan_id, vulns, module="header_check")
+            return
+
+        if name == "http_methods":
+            log.info("=" * 60)
+            log.info("PHASE: HTTP method audit (WSTG-CONF-06)")
+            log.info("=" * 60)
+            targets = self._get_host_root_targets()
+            vulns = await HTTPMethodsScanner(self.config).run(targets)
+            self.results.vulnerabilities.extend(vulns)
+            self.results.modules_run.append("http_methods")
+            self.db.save_vulns(self.scan_id, vulns, module="http_methods")
             return
 
         if name == "cors":
@@ -664,6 +684,12 @@ def parse_args():
         help="Skip the HTTP security header check module",
     )
     p.add_argument(
+        "--fail-on",
+        choices=["critical", "high", "medium", "low", "info"],
+        help="Exit with code 2 if any finding is at or above this severity "
+        "(for CI/CD gating). Default: no gating, always exit 0.",
+    )
+    p.add_argument(
         "--resume",
         action="store_true",
         help="Resume the last interrupted scan from resume.cfg (written after every completed module). "
@@ -793,11 +819,38 @@ def _build_config(args, plan, profiles, target: str, output_dir: Path, resume_sk
     return ScanConfig(**kwargs)
 
 
-async def _run_targets(jobs: list[tuple[ScanConfig, str | None]]) -> None:
+async def _run_targets(jobs: list[tuple[ScanConfig, str | None]]) -> list[ScanResult]:
     """Run one or more (config, scan_id) jobs sequentially in a single event loop."""
+    results: list[ScanResult] = []
     for config, scan_id in jobs:
         scanner = RedScanner(config, scan_id=scan_id)
-        await scanner.run()
+        results.append(await scanner.run())
+    return results
+
+
+def _fail_on_exit_code(results: list[ScanResult], threshold: str | None) -> int:
+    """Return an exit code for CI gating: non-zero when any finding is at or
+    above the --fail-on severity threshold across all scanned targets."""
+    if not threshold:
+        return 0
+    limit = SEVERITY_RANK.get(threshold, 4)
+    worst: tuple[str, str, str] | None = None  # (severity, target, vuln_type)
+    total = 0
+    for r in results:
+        for v in r.vulnerabilities:
+            rank = SEVERITY_RANK.get(v.severity, 4)
+            if rank <= limit:
+                total += 1
+                if worst is None or rank < SEVERITY_RANK.get(worst[0], 4):
+                    worst = (v.severity, r.target, v.vuln_type)
+    if total:
+        log.error(
+            "--fail-on %s: %s finding(s) at or above threshold (worst: %s %s on %s) — exiting 2",
+            threshold, total, worst[0], worst[2], worst[1],
+        )
+        return 2
+    log.info("--fail-on %s: no findings at or above threshold — exiting 0", threshold)
+    return 0
 
 
 def main():
@@ -853,8 +906,8 @@ def main():
         )
         log.info("Resuming scan %s for %s (%s/%s modules already completed)",
                   scan_id, target, len(completed), len(config.modules))
-        asyncio.run(_run_targets([(config, scan_id)]))
-        return
+        results = asyncio.run(_run_targets([(config, scan_id)]))
+        sys.exit(_fail_on_exit_code(results, args.fail_on))
 
     if args.target_file:
         targets = _load_targets_file(args.target_file)
@@ -866,8 +919,8 @@ def main():
             config = _build_config(args, plan, profiles, t, output_dir)
             jobs.append((config, None))
         log.info("Batch scan: %s targets from %s", len(jobs), args.target_file)
-        asyncio.run(_run_targets(jobs))
-        return
+        results = asyncio.run(_run_targets(jobs))
+        sys.exit(_fail_on_exit_code(results, args.fail_on))
 
     target = (args.target or plan.get("domain") or "").strip()
     if not target:
@@ -876,7 +929,8 @@ def main():
 
     output_dir = Path(args.output) / target / datetime.now().strftime("%Y%m%d_%H%M%S")
     config = _build_config(args, plan, profiles, target, output_dir)
-    asyncio.run(_run_targets([(config, None)]))
+    results = asyncio.run(_run_targets([(config, None)]))
+    sys.exit(_fail_on_exit_code(results, args.fail_on))
 
 
 if __name__ == "__main__":

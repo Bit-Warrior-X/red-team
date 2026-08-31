@@ -1,7 +1,10 @@
 """
-modules/report_generator.py — RedScanner v0.3
-Generates HTML, JSON, and Markdown reports from scan results.
+modules/report_generator.py — RedScanner v0.4
+Generates HTML, JSON, Markdown, and SARIF reports from scan results.
 v0.3: CVSS score column added to HTML vulnerability table.
+v0.4: SARIF 2.1.0 export (report.sarif) for CI/CD code-scanning integration.
+      report.json carries verification_status default ("unverified") so it
+      lines up with the schema triage.py writes back after manual review.
 """
 
 import html
@@ -15,6 +18,25 @@ from core.models import ScanResult, Vulnerability
 from core.surface import aggregate_parameters, asset_to_dict
 
 log = logging.getLogger("redscanner.report")
+
+REDSCANNER_VERSION = "0.4.0"
+
+# SARIF severity levels (SARIF only defines error/warning/note/none) mapped
+# from RedScanner severities, plus the numeric security-severity CI tools rank on.
+SARIF_LEVEL = {
+    "critical": "error",
+    "high": "error",
+    "medium": "warning",
+    "low": "warning",
+    "info": "note",
+}
+SARIF_SECURITY_SEVERITY = {
+    "critical": "9.5",
+    "high": "8.0",
+    "medium": "5.5",
+    "low": "3.0",
+    "info": "0.0",
+}
 
 SEVERITY_ORDER  = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 SEVERITY_COLORS = {
@@ -79,6 +101,7 @@ class ReportGenerator:
         self._generate_json(results, sorted_vulns)
         self._generate_markdown(results, sorted_vulns)
         self._generate_html(results, sorted_vulns)
+        self._generate_sarif(results, sorted_vulns)
         log.info(f"Reports written to {self.output_dir}")
 
     def _surface_payload(self, results: ScanResult, vulns: list[Vulnerability]) -> dict:
@@ -103,7 +126,7 @@ class ReportGenerator:
     def _generate_json(self, results: ScanResult, vulns: list[Vulnerability]):
         surface = self._surface_payload(results, vulns)
         data = {
-            "redscanner_version": "0.3.1",
+            "redscanner_version": REDSCANNER_VERSION,
             "scan_id":            results.scan_id,
             "target":             results.target,
             "strict_domain_reports": self.config.strict_domain_reports,
@@ -131,6 +154,10 @@ class ReportGenerator:
                     "description": v.description,
                     "remediation": v.remediation,
                     "tool":        v.tool,
+                    # v0.4: unset here on every fresh scan; triage.py apply
+                    # fills this in from a completed triage_template.json.
+                    "verification_status": "unverified",
+                    "verification_note": "",
                 }
                 for v in vulns
             ],
@@ -142,6 +169,74 @@ class ReportGenerator:
         surf_path = self.output_dir / "surface.json"
         surf_path.write_text(json.dumps(surface, indent=2))
         log.info(f"Surface JSON: {surf_path}")
+
+    # ── SARIF (CI/CD) ─────────────────────────────────────────
+
+    def _generate_sarif(self, results: ScanResult, vulns: list[Vulnerability]):
+        """Emit SARIF 2.1.0 so findings surface in CI/CD (e.g. GitHub code
+        scanning). Each distinct vuln_type becomes a rule; each finding a result."""
+        rules: dict[str, dict] = {}
+        sarif_results: list[dict] = []
+
+        for v in vulns:
+            rule_id = v.vuln_type or "finding"
+            if rule_id not in rules:
+                rules[rule_id] = {
+                    "id": rule_id,
+                    "name": rule_id.replace("_", " ").title().replace(" ", ""),
+                    "shortDescription": {"text": rule_id.replace("_", " ")},
+                    "defaultConfiguration": {"level": SARIF_LEVEL.get(v.severity, "warning")},
+                    "properties": {
+                        "tags": ["security", v.tool] if v.tool else ["security"],
+                        "security-severity": SARIF_SECURITY_SEVERITY.get(v.severity, "0.0"),
+                    },
+                }
+
+            uri = self._rewrite_localhost_to_target(v.url) or v.url or self.config.target
+            message_parts = [v.description or v.vuln_type]
+            if v.parameter:
+                message_parts.append(f"Parameter: {v.parameter}")
+            if v.evidence:
+                message_parts.append(f"Evidence: {v.evidence[:300]}")
+            if v.remediation:
+                message_parts.append(f"Remediation: {v.remediation}")
+
+            sarif_results.append({
+                "ruleId": rule_id,
+                "level": SARIF_LEVEL.get(v.severity, "warning"),
+                "message": {"text": " | ".join(message_parts)},
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": uri},
+                    },
+                }],
+                "properties": {
+                    "severity": v.severity,
+                    "cvss_score": v.cvss_score,
+                    "cve_id": v.cve_id,
+                    "tool": v.tool,
+                },
+            })
+
+        sarif = {
+            "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [{
+                "tool": {
+                    "driver": {
+                        "name": "RedScanner",
+                        "version": REDSCANNER_VERSION,
+                        "informationUri": "https://owasp.org/www-project-web-security-testing-guide/",
+                        "rules": list(rules.values()),
+                    }
+                },
+                "results": sarif_results,
+            }],
+        }
+
+        path = self.output_dir / "report.sarif"
+        path.write_text(json.dumps(sarif, indent=2))
+        log.info(f"SARIF report: {path}")
 
     # ── Markdown ──────────────────────────────────────────────
 
@@ -448,7 +543,7 @@ class ReportGenerator:
 
         html_page = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<title>RedScanner v0.3 Report - {html.escape(results.target)}</title>
+<title>RedScanner v{REDSCANNER_VERSION} Report - {html.escape(results.target)}</title>
 <style>
 body {{ font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 24px; }}
 .container {{ max-width: 1280px; margin: 0 auto; }}
@@ -463,7 +558,7 @@ a {{ cursor: pointer; }}
 a:hover {{ color: #7dd3fc !important; }}
 </style></head><body>
 <div class="container">
-<h1>RedScanner Report <span style="font-size:14px;color:#64748b;font-weight:400">v0.3</span></h1>
+<h1>RedScanner Report <span style="font-size:14px;color:#64748b;font-weight:400">v{REDSCANNER_VERSION}</span></h1>
 <p class="meta"><strong>Target:</strong> {html.escape(results.target)} &nbsp;
 <strong>Scan ID:</strong> {html.escape(results.scan_id)} &nbsp;
 <strong>Date:</strong> {results.started_at.strftime('%Y-%m-%d %H:%M')} &nbsp;

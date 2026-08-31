@@ -1,8 +1,42 @@
-# RedScanner v0.3.1
+# RedScanner v0.4
 
 Async Python security orchestrator for web application and CDN red team engagements.
 Chains external recon/vuln tools into a single pipeline with structured JSON, HTML,
-and Markdown output.
+Markdown, and SARIF output.
+
+## What's new in v0.4
+
+| Feature | Details |
+|---------|---------|
+| Manual finding verification | `triage.py` export/apply workflow — record confirmed / false_positive / unverified on critical/high findings without touching the scan pipeline (closes the March SQLi manual-verification carry-forward) |
+| HTTP method audit | OWASP WSTG-CONF-06 — enumerates accepted methods via OPTIONS, flags PUT / DELETE / CONNECT / PATCH, and actively confirms TRACE (Cross-Site Tracing / XST) before reporting. curl-only, no new tool dependency |
+| SARIF export | `report.sarif` (SARIF 2.1.0) written alongside JSON/HTML/MD — one rule per vuln type, `security-severity` set for GitHub code scanning and other SARIF-aware pipelines |
+| `--fail-on <severity>` | CI/CD gating: process exits with code `2` when any finding is at or above the given severity (`critical`/`high`/`medium`/`low`/`info`); otherwise exits `0`. Works for single, `--resume`, and `--target-file` runs |
+| New module in profiles | `http_methods` added to `full`, `red-team`, and `web-hardening` profiles (default and `red_plan.json`) |
+| `verification_status` in report.json | Fresh findings default to `"unverified"` so schema matches what `triage.py apply` writes back |
+
+### Manual finding verification (`triage.py`)
+
+Automated tools flag things that need a human to confirm before they're client-ready —
+this has been an open item since the March scan (7 critical SQLi findings flagged for
+manual Burp Suite validation). `triage.py` closes that without touching `--resume` or
+`results.db`:
+
+```bash
+# 1. Export critical/high findings from a scan for manual review
+python triage.py export output/<target>/<scan_id>/report.json
+
+# 2. Edit triage_template.json — set each finding's "status" to
+#    "confirmed" or "false_positive" and add a "note"
+
+# 3. Apply the completed triage back onto the report
+python triage.py apply output/<target>/<scan_id>/report.json \
+                        output/<target>/<scan_id>/triage_template.json
+```
+
+`apply` writes `report.verified.json` and `verification_summary.md`. Findings are
+matched with the same stable identity `scan_diff.py` uses (url + type + parameter +
+evidence + tool).
 
 ## What's new in v0.3
 
@@ -57,19 +91,23 @@ main.py
     ├── sqli_scanner.py       sqlmap
     ├── api_leak_scanner.py   endpoint / key leak detection
     ├── header_scanner.py     HTTP security header audit (WSTG-CONF-07)
+    ├── http_methods_scanner.py HTTP method audit (WSTG-CONF-06)         ← v0.4
     ├── cors_scanner.py       CORS misconfiguration (WSTG-CLIENT-07)   ← v0.3
     ├── tls_scanner.py        TLS/SSL assessment (WSTG-CRYP-01)        ← v0.3
     ├── dirbust_scanner.py    directory enumeration (WSTG-CONF-05)     ← v0.3
     ├── cdn_bypass_scanner.py CDN/WAF bypass tests                     ← v0.3
     ├── nikto_scanner.py      nikto web server scan
-    └── report_generator.py   HTML + JSON + Markdown reports           ← v0.3 CVSS
+    └── report_generator.py   HTML + JSON + Markdown + SARIF reports   ← v0.4 SARIF + verification_status
+
+triage.py     manual finding verification workflow (export/apply)      ← v0.4
+scan_diff.py  compare two report.json runs for regressions
 ```
 
 ## Module execution order
 
 ```
 recon → wayback → naabu → nuclei → xss → sqli → api_leak →
-header_check → cors → tls → dirbust → cdn_bypass → nikto
+header_check → http_methods → cors → tls → dirbust → cdn_bypass → nikto
 ```
 
 After each module completes, `resume.cfg` is updated. On `--resume`, completed
@@ -157,8 +195,17 @@ python main.py --plan assets/red_plan.json --target-file targets.txt --profile f
 # Single module run
 python main.py --plan assets/red_plan.json --modules cors,tls
 
+# HTTP method audit only (WSTG-CONF-06)
+python main.py --plan assets/red_plan.json --modules recon,http_methods
+
+# CI/CD: fail the build (exit code 2) if any high or critical finding exists
+python main.py --plan assets/red_plan.json --profile full --fail-on high
+
 # Specify output directory
 python main.py --plan assets/red_plan.json --profile full --output output/june-run
+
+# Test specific domain
+python main.py -t apex.api.macrocosmos.ai --base-url https://apex.api.macrocosmos.ai --profile full
 ```
 
 ### resume.cfg format
@@ -208,6 +255,7 @@ output/sec-test.skycloud.tw/20260622_143022/
 ├── report.html      full report with CVSS column (open in browser)
 ├── report.json      structured data for automation / diff
 ├── report.md        Markdown summary
+├── report.sarif     SARIF 2.1.0 for CI/CD code scanning
 ├── surface.json     attack surface data (domains, ports, URLs, params)
 ├── subdomains.txt   discovered hostnames
 ├── crawled_urls.txt URLs from xcrawl3r/fallback crawler
@@ -219,6 +267,13 @@ Compare two runs for regressions:
 python scan_diff.py output/sec-test.skycloud.tw/old/report.json \
                     output/sec-test.skycloud.tw/new/report.json \
                     --output diff.json
+```
+
+Verify critical/high findings manually and record the outcome:
+```bash
+python triage.py export output/sec-test.skycloud.tw/<scan_id>/report.json
+python triage.py apply  output/sec-test.skycloud.tw/<scan_id>/report.json \
+                         output/sec-test.skycloud.tw/<scan_id>/triage_template.json
 ```
 
 ## CVSS scoring reference (v0.3 modules)
@@ -235,9 +290,39 @@ python scan_diff.py output/sec-test.skycloud.tw/old/report.json \
 | IP spoofing header accepted | Medium | 5.3 |
 | CORS wildcard (no credentials) | Medium | 5.3 |
 | Cache-Control missing on cookies | Medium | 5.3 |
+| HTTP PUT / DELETE enabled | High | 7.5 |
+| TRACE enabled (confirmed XST) | Medium | 5.3 |
+| CONNECT method enabled | Medium | 5.3 |
 | Admin panel exposed | High | 7.5 |
 | Backup file exposed | High | 8.2 |
 | Sensitive path exists but blocked (403 on .env/.git/etc.) | Low | 3.1 |
+
+## CI/CD integration (v0.4)
+
+RedScanner can run as a gate in a pipeline:
+
+```bash
+# Exit code 2 when a high+ finding exists, 0 otherwise
+python main.py --plan assets/red_plan.json --profile full --fail-on high
+```
+
+`--fail-on` accepts `critical`, `high`, `medium`, `low`, or `info`. The exit
+code is evaluated across every scanned target (so it also works with
+`--target-file` batch runs and `--resume`). Without `--fail-on`, RedScanner
+always exits `0`.
+
+Every run also writes `report.sarif` (SARIF 2.1.0). Upload it to GitHub code
+scanning or any SARIF-aware tool — each vulnerability type becomes a rule and
+carries a `security-severity` score so findings rank correctly:
+
+```yaml
+# GitHub Actions example
+- run: python main.py --profile full --fail-on high
+  continue-on-error: true
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: output/<target>/<datetime>/report.sarif
+```
 
 ## Methodology frameworks
 

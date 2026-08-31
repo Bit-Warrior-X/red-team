@@ -1,9 +1,10 @@
 {
   "title": "Red team engagement plan",
-  "description": "RedScanner v0.3 — CORS (WSTG-CLIENT-07), TLS (WSTG-CRYP-01), directory brute-force (WSTG-CONF-05), CDN bypass, HTTP header audit (WSTG-CONF-07), XSS/SQLi/nuclei/nikto/naabu. Resume: python main.py --resume. Multi-target: --target-file targets.txt. New profiles: web-hardening, discovery, cdn-test.",
+  "description": "RedScanner v0.4.0 — triage.py manual verification (export/apply), HTTP method audit (WSTG-CONF-06), CORS/TLS/dirbust/CDN/header modules, SARIF export, --fail-on CI gating. Resume: python main.py --resume. Multi-target: --target-file targets.txt.",
   "domain": "freetodolist.com",
   "base_url": "https://freetodolist.com/",
   "cdn_origin_ip": "38.60.218.193",
+  "dirbust_wordlist": "assets/wordlists/common.txt",
   "strict_domain_reports": false,
   "nuclei_extra_args": [],
   "nuclei_tags": [],
@@ -16,10 +17,10 @@
     "NIST SP 800-115 — Technical Guide for Security Testing"
   ],
   "profiles": {
-    "full": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "cors", "tls", "dirbust", "cdn_bypass", "nikto"],
+    "full": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "http_methods", "cors", "tls", "dirbust", "cdn_bypass", "nikto"],
     "lite": ["recon", "nuclei", "xss", "sqli", "api_leak", "header_check"],
-    "red-team": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "cors", "tls", "dirbust", "cdn_bypass", "nikto"],
-    "web-hardening": ["recon", "header_check", "cors", "tls"],
+    "red-team": ["recon", "wayback", "naabu", "nuclei", "xss", "sqli", "api_leak", "header_check", "http_methods", "cors", "tls", "dirbust", "cdn_bypass", "nikto"],
+    "web-hardening": ["recon", "header_check", "http_methods", "cors", "tls"],
     "discovery": ["recon", "naabu", "dirbust"],
     "cdn-test": ["recon", "cors", "tls", "cdn_bypass", "header_check"],
     "attack-surface": ["recon", "wayback", "naabu", "nuclei"],
@@ -31,6 +32,17 @@
     "header-only": ["recon", "header_check"]
   },
   "manual_phases": [
+    {
+      "name": "August — RedScanner v0.4 (HTTP methods + CI/CD + triage)",
+      "tasks": [
+        "HTTP method audit: python main.py --profile web-hardening (now includes http_methods; WSTG-CONF-06)",
+        "Confirm any TRACE/PUT/DELETE finding manually with curl -X <METHOD> before reporting to Blue Team",
+        "CI/CD gating: python main.py --profile full --fail-on high (exit code 2 when a high+ finding exists)",
+        "Consume report.sarif in GitHub code scanning / any SARIF-aware pipeline",
+        "Manual verification: python triage.py export output/<target>/<scan>/report.json — mark confirmed/false_positive, then triage.py apply",
+        "Full v0.4 pipeline: python main.py --profile full"
+      ]
+    },
     {
       "name": "June — RedScanner v0.3 new modules",
       "tasks": [

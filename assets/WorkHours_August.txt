@@ -1,0 +1,122 @@
+Day1.
+RedScanner v0.4 — HTTP method audit (WSTG-CONF-06)
+We still weren't checking which HTTP methods a host actually allows. Wrote modules/http_methods_scanner.py: pull Allow / Access-Control-Allow-Methods from OPTIONS, flag PUT and DELETE as high, CONNECT/PATCH lower, and only report TRACE if a real TRACE request comes back 200 with the request echoed (so a 405'd TRACE doesn't become a fake XST finding). Just curl, nothing new to install.
+
+Result:
+- Findings come out as normal Vulnerability objects with CVSS filled in.
+- Checked the response parser against a small local server that advertised PUT/TRACE/DELETE and actually answered TRACE.
+- Handles curl -L when there are multiple header blocks (keeps the last one).
+
+Analytics:
+- If you only trust the Allow header, every host that lists TRACE but blocks it looks vulnerable. Had to confirm with a real request.
+
+
+Day2.
+RedScanner v0.4 — hooked http_methods into main.py
+Module existed but wasn't in the run order yet. Imported it, put it after header_check in MODULE_ORDER, added the dispatch branch, and put it on full / red-team / web-hardening in both the code defaults and red_plan.json (plan profiles overwrite the built-ins, so both have to match).
+
+Result:
+- --list-profiles shows http_methods where it should be.
+- Ran a short profile locally — module actually executes, not just "unknown module skipped".
+
+Analytics:
+- Forgot to update red_plan.json once and the plan silently dropped the new step. Easy mistake; fixed both places.
+
+
+Day3.
+RedScanner v0.4 — SARIF output
+HTML/JSON/MD are fine for us, but CI can't really use them. report_generator now also writes report.sarif (2.1.0): one rule per finding type, levels mapped from severity, security-severity number set so GitHub code scanning can rank them. One version string shared for JSON/HTML/SARIF.
+
+Result:
+- Scan output folder now has report.sarif next to the usual files.
+- Spot-checked a fake report with a couple findings — schema and levels looked right.
+
+Analytics:
+- Same findings as the HTML report, just in a format a pipeline can upload without extra conversion.
+
+
+Day4.
+RedScanner v0.4 — --fail-on for CI
+Scanner always exited 0 even with criticals, so a pipeline couldn't fail the job. Added --fail-on critical|high|medium|low|info. After the run (including batch / resume), if anything is at that severity or worse, exit 2. Had to make _run_targets return the results so all three entry points use the same check.
+
+Result:
+- High finding + --fail-on high → exit 2; same run with --fail-on critical → exit 0.
+- --target-file uses the worst finding across every host, not only the last one.
+- Dropped a short GitHub Actions example in the README.
+
+Analytics:
+- If each path (normal / resume / batch) had its own exit logic it would diverge. One helper was enough.
+
+
+Day5.
+RedScanner v0.4 — ship wordlists with the repo
+Keep hitting "no wordlist found — falling back to built-in paths" on this box. Pulled SecLists pieces together into assets/wordlists/all.txt (~165k unique) and left common.txt (~4.7k) for quicker runs. Pointed dirbust_wordlist at it in red_plan.json.
+
+Result:
+- Don't need seclists installed system-wide anymore for a normal scan.
+- common.txt and all.txt both in the repo.
+
+Analytics:
+- The built-in path list is maybe 80 entries. Fine as a backup, not as the main discovery list.
+
+
+Day6.
+RedScanner v0.4 — full run on apex.api.macrocosmos.ai
+Ran --profile full against apex.api.macrocosmos.ai. CORS credentialed hits, missing headers, some TLS notes, CDN missing X-Cache-Status — all showed up. Weird part: dirbust reported nothing, but curl to /metrics was still 200 and /prometheus 301.
+
+Result:
+- Reports (html/json/sarif) generated cleanly.
+- Noted dirbust/gobuster as broken on this host even though the paths are live.
+
+Analytics:
+- Gobuster line in the log finished in like 30ms with 0 findings. That's not a scan, that's the binary rejecting the args.
+
+
+Day7.
+RedScanner v0.4 — gobuster v2 args + keep the builtin probe
+Turns out gobuster here is the old v2 style (`gobuster -m dir`, `-np`, `-to`), and we were calling v3 (`gobuster dir`, `--no-progress`). Fixed the detection and the command line. Also always run the built-in path probe so /metrics and friends don't disappear if gobuster flakes. Marked those monitoring paths as medium. Stripped the ANSI junk gobuster prints so the parser can read the lines.
+
+Result:
+- Re-checked apex: /metrics and /prometheus back in the report; gobuster also picked up /docs.
+- Wrong CLI no longer fails quietly with an empty result set.
+
+Analytics:
+- Relying only on gobuster was a bad idea once we had a wordlist — the builtin probe is what actually caught the monitoring endpoints before.
+
+
+Day8.
+RedScanner v0.4 — dirbust was too slow
+Full profile spent ~10 minutes in gobuster on all.txt with -x extensions, then timed out and found nothing. Switched the default to common.txt, don't attach -x on big lists, run the builtin probe first (and in parallel), cap gobuster at 150s, and kill the process on timeout so it doesn't keep running in the background.
+
+Result:
+- Same target, dirbust phase ~45s instead of ~600s, still gets /metrics, /prometheus, /docs.
+- If someone points at all.txt for a full profile, it falls back to common.txt with a warning.
+
+Analytics:
+- Burning ten minutes to get zero lines of gobuster output is worse than a shorter wordlist that finishes.
+- Keep all.txt around for a dedicated deep pass if we need it later.
+
+
+Day9.
+RedScanner v0.4 — triage.py
+Needed a way to mark findings confirmed or false positive after manual review, without touching the scan pipeline. Wrote triage.py like scan_diff.py: `export` dumps critical/high into triage_template.json with a stable key; after editing status/note, `apply` writes report.verified.json and a short markdown summary. Fresh reports already ship verification_status: unverified so the shapes match.
+
+Result:
+- Tried it on a small fake report and on a real apex report.json — keys matched, summary counts looked right.
+- Lives next to scan_diff.py at the repo root.
+
+Analytics:
+- Doing this after the scan (not inside main.py) means it can't mess with resume or the DB mid-run.
+- Key is basically the same fields scan_diff already uses, just hashed so it's short.
+
+
+Day10.
+RedScanner v0.4.0 — version bump and docs
+Set version to 0.4.0 in main.py and the report generator. Updated README and red_plan with the new flags/modules/triage usage. Quick compile check and one more triage export/apply on a live report after the dirbust speed changes.
+
+Result:
+- v0.4.0 docs match what's actually in the tree.
+- Full profile after the wordlist/timeout tweaks finishes in a sane time and still reports the monitoring paths.
+
+Analytics:
+- Main remaining work is sitting down with triage_template.json and actually marking the critical/high items — the tooling side is done.
